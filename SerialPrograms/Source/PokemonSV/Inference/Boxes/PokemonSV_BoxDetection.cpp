@@ -44,7 +44,7 @@ std::string BOX_CURSOR_LOCATION_NAMES(BoxCursorLocation location){
 }
 
 std::string BOX_LOCATION_STRING(BoxCursorLocation location, uint8_t row, uint8_t col){
-    return "(" + BOX_CURSOR_LOCATION_NAMES(location) + " row " + std::to_string(row) + " col " + std::to_string(col) + ")";
+    return '(' + BOX_CURSOR_LOCATION_NAMES(location) + " row " + std::to_string(row) + " col " + std::to_string(col) + ')';
 }
 
 

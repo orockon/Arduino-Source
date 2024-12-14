@@ -42,7 +42,7 @@ std::string aspect_ratio_as_string(const Resolution& resolution){
     h = resolution.height;
     w /= gcd;
     h /= gcd;
-    return "(" + std::to_string(w) + ":" + std::to_string(h) + ")";
+    return '(' + std::to_string(w) + ':' + std::to_string(h) + ')';
 }
 
 

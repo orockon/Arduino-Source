@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <cstddef>
+#include <cstring>
 #include "Kernels/Kernels_arm64_NEON.h"
 // #include "Kernels/PartialWordAccess/Kernels_PartialWordAccess_arm64_NEON.h"
 #include "Kernels_ImageFilter_Basic_Routines.h"
@@ -66,9 +67,9 @@ public:
     }
     PA_FORCE_INLINE void process_partial(uint32_t* out, const uint32_t* in, size_t left){
         uint32_t buffer_in[4], buffer_out[4];
-        memcpy(buffer_in, in, sizeof(uint32_t) * left);
+        std::memcpy(buffer_in, in, sizeof(uint32_t) * left);
         process_full(buffer_out, buffer_in);
-        memcpy(out, buffer_out, sizeof(uint32_t) * left);
+        std::memcpy(out, buffer_out, sizeof(uint32_t) * left);
     }
 
 private:
@@ -162,9 +163,9 @@ public:
     }
     PA_FORCE_INLINE void process_partial(uint32_t* out, const uint32_t* in, size_t left){
         uint32_t buffer_in[4], buffer_out[4];
-        memcpy(buffer_in, in, sizeof(uint32_t) * left);
+        std::memcpy(buffer_in, in, sizeof(uint32_t) * left);
         process_full(buffer_out, buffer_in);
-        memcpy(out, buffer_out, sizeof(uint32_t) * left);
+        std::memcpy(out, buffer_out, sizeof(uint32_t) * left);
     }
 
 private:
@@ -239,9 +240,9 @@ public:
     }
     PA_FORCE_INLINE void process_partial(uint32_t* out, const uint32_t* in, size_t left){
         uint32_t buffer_in[4], buffer_out[4];
-        memcpy(buffer_in, in, sizeof(uint32_t) * left);
+        std::memcpy(buffer_in, in, sizeof(uint32_t) * left);
         process_full(buffer_out, buffer_in);
-        memcpy(out, buffer_out, sizeof(uint32_t) * left);
+        std::memcpy(out, buffer_out, sizeof(uint32_t) * left);
     }
 
 private:

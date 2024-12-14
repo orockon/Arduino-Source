@@ -22,11 +22,11 @@ std::string to_utc_time_str(WallClock time){
     std::tm* utc = gmtime(&tt);
     std::string str;
     str += std::to_string(utc->tm_year + 1900);
-    str += "-" + tostr_padded(2, utc->tm_mon + 1);
-    str += "-" + tostr_padded(2, utc->tm_mday);
-    str += " " + tostr_padded(2, utc->tm_hour);
-    str += ":" + tostr_padded(2, utc->tm_min);
-    str += ":" + tostr_padded(2, utc->tm_sec);
+    str += '-' + tostr_padded(2, utc->tm_mon + 1);
+    str += '-' + tostr_padded(2, utc->tm_mday);
+    str += ' ' + tostr_padded(2, utc->tm_hour);
+    str += ':' + tostr_padded(2, utc->tm_min);
+    str += ':' + tostr_padded(2, utc->tm_sec);
     return str;
 #endif
 #if 0
@@ -36,11 +36,11 @@ std::string to_utc_time_str(WallClock time){
     QTime qtime = now.time();
     std::string str;
     str += std::to_string(qdate.year());
-    str += "-" + tostr_padded(2, qdate.month());
-    str += "-" + tostr_padded(2, qdate.day());
-    str += " " + tostr_padded(2, qtime.hour());
-    str += ":" + tostr_padded(2, qtime.minute());
-    str += ":" + tostr_padded(2, qtime.second());
+    str += '-' + tostr_padded(2, qdate.month());
+    str += '-' + tostr_padded(2, qdate.day());
+    str += ' ' + tostr_padded(2, qtime.hour());
+    str += ':' + tostr_padded(2, qtime.minute());
+    str += ':' + tostr_padded(2, qtime.second());
     return str;
 
 #endif
@@ -51,11 +51,11 @@ std::string to_utc_time_str(WallClock time){
     QTime qtime = qdatetime.time();
     std::string str;
     str += std::to_string(qdate.year());
-    str += "-" + tostr_padded(2, qdate.month());
-    str += "-" + tostr_padded(2, qdate.day());
-    str += " " + tostr_padded(2, qtime.hour());
-    str += ":" + tostr_padded(2, qtime.minute());
-    str += ":" + tostr_padded(2, qtime.second());
+    str += '-' + tostr_padded(2, qdate.month());
+    str += '-' + tostr_padded(2, qdate.day());
+    str += ' ' + tostr_padded(2, qtime.hour());
+    str += ':' + tostr_padded(2, qtime.minute());
+    str += ':' + tostr_padded(2, qtime.second());
     return str;
 }
 WallClock parse_utc_time_str(const std::string& str){

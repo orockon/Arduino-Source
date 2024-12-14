@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget* parent)
 //    statusbar = new QStatusBar(this);
 //    statusbar->setObjectName(QString::fromUtf8("statusbar"));
 //    setStatusBar(statusbar);
-    setWindowTitle(QString::fromStdString(PROGRAM_NAME + " Computer-Control Programs (" + PROGRAM_VERSION + ")"));
+    setWindowTitle(QString::fromStdString(PROGRAM_NAME + " Computer-Control Programs (" + PROGRAM_VERSION + ')'));
 
     QHBoxLayout* hbox = new QHBoxLayout(centralwidget);
 
@@ -79,7 +79,7 @@ MainWindow::MainWindow(QWidget* parent)
 
 
     QGroupBox* support_box = new QGroupBox(
-        QString::fromStdString(PROGRAM_NAME + " " + PROGRAM_VERSION + " (" + PA_ARCH_STRING + ")"),
+        QString::fromStdString(PROGRAM_NAME + " " + PROGRAM_VERSION + " (" + PA_ARCH_STRING + ')'),
         centralwidget
     );
     left_layout->addWidget(support_box);
@@ -131,8 +131,8 @@ MainWindow::MainWindow(QWidget* parent)
                 str += "Version: " + PROGRAM_VERSION + "<br>";
                 str += "<br>";
                 str += "Framework: Qt " + std::to_string(QT_VERSION_MAJOR);
-                str += "." + std::to_string(QT_VERSION_MINOR);
-                str += "." + std::to_string(QT_VERSION_PATCH);
+                str += '.' + std::to_string(QT_VERSION_MINOR);
+                str += '.' + std::to_string(QT_VERSION_PATCH);
                 str += "<br>";
                 str += "Compiler: " + COMPILER_VERSION;
                 str += "<br><br>";

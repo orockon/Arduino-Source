@@ -11,7 +11,7 @@ namespace PokemonAutomation{
 
 
 std::string FloatPixel::to_string() const{
-    return "{" + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + "}";
+    return '{' + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + '}';
 }
 double FloatPixel::stddev() const{
     double mean = (r + g + b) / 3;

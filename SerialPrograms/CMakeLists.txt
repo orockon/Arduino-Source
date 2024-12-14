@@ -2218,7 +2218,7 @@ else()
     # Add -Wno-c11-extensions to avoid clang gives
     # /usr/local/Cellar/opencv/4.5.5_3/include/opencv4/opencv2/core/mat.inl.hpp:2116:9: error: '_Atomic' is a C11 extension
     # when compiling OpenCV
-    target_compile_options(SerialPrograms PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-c11-extensions -fno-strict-aliasing)
+    target_compile_options(SerialPrograms PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-c11-extensions -fno-strict-aliasing -flax-vector-conversions)
 
     # Set OS-specific flags
     if (WIN32)
@@ -2228,7 +2228,7 @@ else()
     elseif(UNIX)
     endif()
 
-    IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+    IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm|aarch64")
         # Arm CPU
         #   Run-time ISA dispatching
         target_compile_definitions(SerialPrograms PRIVATE PA_AutoDispatch_arm64_20_M1)

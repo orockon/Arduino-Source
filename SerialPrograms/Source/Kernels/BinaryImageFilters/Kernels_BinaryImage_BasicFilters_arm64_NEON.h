@@ -10,6 +10,7 @@
 #include "Kernels/PartialWordAccess/Kernels_PartialWordAccess_arm64_NEON.h"
 
 #include <iostream>
+#include <cstring>
 using std::cout;
 using std::endl;
 
@@ -48,9 +49,9 @@ public:
         size_t left = count % 4;
         if (left){
             uint32_t buffer[4];
-            memcpy(buffer, pixels + count_round_4, sizeof(uint32_t) * left);
+            std::memcpy(buffer, pixels + count_round_4, sizeof(uint32_t) * left);
             filter4((bits >> count_round_4) & 0xF, buffer);
-            memcpy(pixels + count_round_4, buffer, sizeof(uint32_t) * left);
+            std::memcpy(pixels + count_round_4, buffer, sizeof(uint32_t) * left);
         }
     }
 

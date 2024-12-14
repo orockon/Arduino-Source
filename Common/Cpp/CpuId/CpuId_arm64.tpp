@@ -6,7 +6,10 @@
 
 
 #include <stdint.h>
+
+#ifdef __APPLE__
 #include <sys/sysctl.h>
+#endif
 
 #include "CpuId.h"
 
@@ -17,6 +20,7 @@ const char* PA_ARCH_STRING = "arm64";
 
 uint64_t detect_NEON()
 {
+#ifdef __APPLE__
     // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics
     uint64_t available = 0;
     size_t size = sizeof(available);
@@ -26,6 +30,11 @@ uint64_t detect_NEON()
         perror("sysctl");
     }
     return available;
+#elif __ARM_NEON
+    return true;
+#else
+    return false;
+#endif
 }
 
 CPU_Features& CPU_Features::set_to_current(){

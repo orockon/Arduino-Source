@@ -15,7 +15,7 @@ namespace OCR{
 std::string StringMatchData::to_str() const{
     std::string str;
 
-    str += "\"";
+    str += '"';
     for (char ch : original_text){
         if (ch != '\r' && ch != '\n'){
             str += ch;
@@ -24,8 +24,8 @@ std::string StringMatchData::to_str() const{
     str += "\" -> ";
     str += "\"" + to_utf8(normalized_text) + "\" -> ";
 
-    str += "(" + to_utf8(target) + "): ";
-    str += "(" + token + ")";
+    str += '(' + to_utf8(target) + "): ";
+    str += '(' + token + ')';
     return str;
 }
 
@@ -53,7 +53,7 @@ void StringMatchResult::log(Logger& logger, double max_log10p, const std::string
         if (results.size() == 1){
             auto iter = results.begin();
             str += iter->second.to_str();
-            str += " (log10p = " + tostr_default(iter->first) +")";
+            str += " (log10p = " + tostr_default(iter->first) +')';
         }else{
             str += "Multiple Candidates =>\n";
             size_t printed = 0;
