@@ -40,21 +40,21 @@ std::unique_ptr<PokemonAutomation::CameraSession> CameraBackend::make_camera(Log
 
 
 void CameraSession::add_state_listener(StateListener& listener){
-    m_sanitizer.check_usage();
+    auto scope_check = m_sanitizer.check_scope();
     std::lock_guard<std::mutex> lg(m_lock);
     m_listeners.insert(&listener);
 }
 void CameraSession::remove_state_listener(StateListener& listener){
-    m_sanitizer.check_usage();
+    auto scope_check = m_sanitizer.check_scope();
     std::lock_guard<std::mutex> lg(m_lock);
     m_listeners.erase(&listener);
 }
 void CameraSession::add_frame_listener(VideoFrameListener& listener){
-    m_sanitizer.check_usage();
+    auto scope_check = m_sanitizer.check_scope();
 
 }
 void CameraSession::remove_frame_listener(VideoFrameListener& listener){
-    m_sanitizer.check_usage();
+    auto scope_check = m_sanitizer.check_scope();
 
 }
 
@@ -314,13 +314,19 @@ void CameraSession::shutdown(){
     m_last_frame_timestamp = current_time();
     m_last_frame_seqnum++;
 
-    SpinLockGuard lg(m_frame_lock);
+    {
+        SpinLockGuard lg(m_frame_lock);
 
-    m_last_frame = QVideoFrame();
-    m_last_frame_timestamp = current_time();
-    m_last_frame_seqnum++;
+        m_last_frame = QVideoFrame();
+        m_last_frame_timestamp = current_time();
+        m_last_frame_seqnum++;
 
-    m_last_image_seqnum = m_last_frame_seqnum;
+        m_last_image_seqnum = m_last_frame_seqnum;
+    }
+
+    for (StateListener* listener : m_listeners){
+        listener->post_shutdown();
+    }
 }
 void CameraSession::startup(){
     if (!m_device){
@@ -379,7 +385,7 @@ void CameraSession::startup(){
     if (m_probe){
         connect(
             m_probe, &QVideoProbe::videoFrameProbed,
-            this, [this](const QVideoFrame& frame){
+            m_camera.get(), [this](const QVideoFrame& frame){
                 WallClock now = current_time();
                 SpinLockGuard lg(m_frame_lock);
                 if (GlobalSettings::instance().VIDEO_PIPELINE->ENABLE_FRAME_SCREENSHOTS){

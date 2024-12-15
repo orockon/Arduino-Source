@@ -37,14 +37,14 @@ class RollingStream : public QIODevice{
 public:
     ~RollingStream(){
         waitForBytesWritten(-1);
-//        cout << "~RollingStream()" << endl; //  REMOVE
+//        cout << "~RollingStream()" << endl;
     }
     RollingStream(){
         setOpenMode(QIODeviceBase::WriteOnly);
     }
     virtual qint64 readData(char* data, qint64 maxlen){ return 0; }
     virtual qint64 writeData(const char* data, qint64 len){
-        m_sanitizer.check_usage();
+        auto scope_check = m_sanitizer.check_scope();
         m_bytes += len;
         cout << "total = " << m_bytes << ", current = " << len << endl;
         return len;
@@ -111,7 +111,7 @@ StreamHistoryTracker::~StreamHistoryTracker(){
             pause();
         }catch (...){}
     }
-//    cout << "~StreamHistoryTracker()" << endl;  //  REMOVE
+//    cout << "~StreamHistoryTracker()" << endl;
 }
 StreamHistoryTracker::StreamHistoryTracker(
     size_t audio_samples_per_frame,
