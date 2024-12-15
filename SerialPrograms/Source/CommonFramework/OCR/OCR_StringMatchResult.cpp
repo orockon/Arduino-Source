@@ -22,7 +22,7 @@ std::string StringMatchData::to_str() const{
         }
     }
     str += "\" -> ";
-    str += "\"" + to_utf8(normalized_text) + "\" -> ";
+    str += '"' + to_utf8(normalized_text) + "\" -> ";
 
     str += '(' + to_utf8(target) + "): ";
     str += '(' + token + ')';
@@ -62,7 +62,7 @@ void StringMatchResult::log(Logger& logger, double max_log10p, const std::string
                     str += "    (" + std::to_string(results.size() - 10) + " more...)\n";
                     break;
                 }
-                str += "    " + tostr_default(item.first) + " : " + item.second.to_str() + "\n";
+                str += "    " + tostr_default(item.first) + " : " + item.second.to_str() + '\n';
                 printed++;
             }
         }
