@@ -146,6 +146,13 @@ namespace PokemonAutomation{
 namespace NintendoSwitch{
 
 
+namespace PokemonSwSh{
+    std::vector<ImagePixelBox> find_selection_arrows(const ImageViewRGB32& image, size_t min_area);
+}
+
+
+
+
 StringSelectDatabase make_database(){
     StringSelectDatabase ret;
     for (size_t c = 0; c < 1000; c++){
@@ -269,6 +276,11 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
     [[maybe_unused]] VideoOverlay& overlay = env.consoles[0];
     BotBaseContext context(scope, console.botbase());
     VideoOverlaySet overlays(overlay);
+
+
+
+//    ImageRGB32 image("Screenshot.png");
+//    PokemonSwSh::find_selection_arrows(image, 10);
 
 
 //    LifetimeSanitizer::terminate_with_dump();
