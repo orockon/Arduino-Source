@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.18.0)
 #set the name of the project
 project(SerialPrograms)
 
+option(FORCE_CLANG_LIBS "Forcue using clang provided libraries for Apple/Linux only" OFF)
+
 if (APPLE OR UNIX)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     else()
@@ -14,6 +16,11 @@ endif()
 #enable c++ 23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(FORCE_CLANG_LIBS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
+endif()
 
 #produce clang tidy file
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
