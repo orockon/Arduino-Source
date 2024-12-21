@@ -4,6 +4,13 @@ cmake_minimum_required(VERSION 3.18.0)
 #set the name of the project
 project(SerialPrograms)
 
+if (APPLE OR UNIX)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    else()
+        message(FATAL_ERROR "Must use Clang as the compiler")
+    endif()
+endif()
+
 #enable c++ 23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -2213,12 +2220,26 @@ else()
             INTERFACE_LINK_LIBRARIES "-L/opt/homebrew/lib -lssl -lcrypto -lopus -lsodium -lz" # add dpp's deps
         )
         target_link_libraries(SerialPrograms PRIVATE libdpp)
+    else()
+        add_library(libdpp SHARED IMPORTED)
+        IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm|aarch64")
+            set_target_properties(libdpp PROPERTIES
+                IMPORTED_LOCATION ../3rdPartyBinaries/libdpp.arm64.so
+                INTERFACE_COMPILE_DEFINITIONS "PA_DPP"
+            )
+        else()
+            set_target_properties(libdpp PROPERTIES
+                IMPORTED_LOCATION ../3rdPartyBinaries/libdpp.x86_64.so
+                INTERFACE_COMPILE_DEFINITIONS "PA_DPP"
+            )
+        endif()
+        target_link_libraries(SerialPrograms PRIVATE libdpp)
     endif()
 
     # Add -Wno-c11-extensions to avoid clang gives
     # /usr/local/Cellar/opencv/4.5.5_3/include/opencv4/opencv2/core/mat.inl.hpp:2116:9: error: '_Atomic' is a C11 extension
     # when compiling OpenCV
-    target_compile_options(SerialPrograms PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-c11-extensions -fno-strict-aliasing -flax-vector-conversions)
+    target_compile_options(SerialPrograms PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-c11-extensions)
 
     # Set OS-specific flags
     if (WIN32)
