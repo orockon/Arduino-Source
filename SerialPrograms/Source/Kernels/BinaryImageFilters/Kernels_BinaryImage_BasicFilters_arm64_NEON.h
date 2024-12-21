@@ -9,10 +9,10 @@
 
 #include "Kernels/PartialWordAccess/Kernels_PartialWordAccess_arm64_NEON.h"
 
-#include <iostream>
 #include <cstring>
-using std::cout;
-using std::endl;
+// #include <iostream>
+// using std::cout;
+// using std::endl;
 
 namespace PokemonAutomation{
 namespace Kernels{
@@ -150,8 +150,6 @@ private:
     const uint32x4_t m_zeros;
 };
 
-
-
 // Compress given pixels buffer (of up to 64-pixel long) into bit map and store in one uint64_t.
 class Compressor_RgbRange_arm64_NEON{
 public:
@@ -179,13 +177,14 @@ public:
             bits |= convert16(pixels + c) << c;
             c += 16;
         }
-        for(; c < count; c += 4){
+
+        count %= 16;
+        for(size_t i = 0; i < count / 4; i++, c+=4){
             const uint8x16_t pixel = vld1q_u8((const uint8_t*)(pixels + c));
             bits |= convert4(pixel) << c;
         }
         count %= 4;
         if (count){
-            c -= 4;
             PartialWordAccess_arm64_NEON loader(count * sizeof(uint32_t));
             const uint8x16_t pixel = loader.load(pixels + c);
             const uint64_t mask = ((uint64_t)1 << count) - 1;
@@ -274,6 +273,7 @@ public:
         for(size_t i = 0; i < count / 4; i++, c+=4){
             bits |= convert4(pixels + c) << c;
         }
+        count %= 4;
         if (count){
             PartialWordAccess_arm64_NEON loader(count * sizeof(uint32_t));
             const uint8x16_t pixel = loader.load(pixels + c);
