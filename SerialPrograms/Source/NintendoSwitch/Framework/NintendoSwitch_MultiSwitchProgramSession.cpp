@@ -13,7 +13,7 @@
 #include "CommonFramework/Notifications/ProgramNotifications.h"
 #include "CommonFramework/Options/Environment/SleepSuppressOption.h"
 #include "CommonFramework/Options/Environment/PerformanceOptions.h"
-#include "CommonFramework/Tools/BlackBorderCheck.h"
+#include "NintendoSwitch/Controllers/NintendoSwitch_Controller.h"
 #include "NintendoSwitch_MultiSwitchProgramOption.h"
 #include "NintendoSwitch_MultiSwitchProgramSession.h"
 
@@ -43,9 +43,9 @@ MultiSwitchProgramSession::MultiSwitchProgramSession(MultiSwitchProgramOption& o
     , m_scope(nullptr)
     , m_sanitizer("MultiSwitchProgramSession")
 {
-    WriteSpinLock lg(m_lock);
-    m_system.add_listener(*this);
+//    WriteSpinLock lg(m_lock);
     m_option.instance().update_active_consoles(option.system().count());
+    m_system.add_listener(*this);
 }
 
 MultiSwitchProgramSession::~MultiSwitchProgramSession(){
@@ -83,12 +83,22 @@ void MultiSwitchProgramSession::run_program_instance(MultiSwitchProgramEnvironme
         }
     }
 
+    //  Startup Checks
     size_t consoles = m_system.count();
     for (size_t c = 0; c < consoles; c++){
-        if (!m_system[c].serial_session().is_ready()){
-            throw UserSetupError(m_system[c].logger(), "Cannot Start: Serial connection not ready.");
-        }
-        start_program_video_check(env.consoles[c], m_option.descriptor().feedback());
+        m_option.instance().start_program_controller_check(
+            scope,
+            m_system[c].controller_session(), c
+        );
+        m_option.instance().start_program_feedback_check(
+            scope,
+            env.consoles[c], c,
+            m_option.descriptor().feedback()
+        );
+        m_option.instance().start_program_border_check(
+            scope,
+            env.consoles[c], c
+        );
     }
 
     m_scope.store(&scope, std::memory_order_release);
@@ -96,7 +106,7 @@ void MultiSwitchProgramSession::run_program_instance(MultiSwitchProgramEnvironme
     try{
         m_option.instance().program(env, scope);
         for (size_t c = 0; c < consoles; c++){
-            env.consoles[c].botbase().wait_for_all_requests();
+            env.consoles[c].controller().wait_for_all(&scope);
         }
     }catch (...){
         m_scope.store(nullptr, std::memory_order_release);
@@ -107,10 +117,10 @@ void MultiSwitchProgramSession::run_program_instance(MultiSwitchProgramEnvironme
 void MultiSwitchProgramSession::internal_stop_program(){
     auto ScopeCheck = m_sanitizer.check_scope();
     WriteSpinLock lg(m_lock);
-    size_t consoles = m_system.count();
-    for (size_t c = 0; c < consoles; c++){
-        m_system[c].serial_session().stop();
-    }
+//    size_t consoles = m_system.count();
+//    for (size_t c = 0; c < consoles; c++){
+//        m_system[c].serial_session().stop();
+//    }
     CancellableScope* scope = m_scope.load(std::memory_order_acquire);
     if (scope != nullptr){
         scope->cancel(std::make_exception_ptr(ProgramCancelledException()));
@@ -121,9 +131,9 @@ void MultiSwitchProgramSession::internal_stop_program(){
         pause();
     }
 
-    for (size_t c = 0; c < consoles; c++){
-        m_system[c].serial_session().reset();
-    }
+//    for (size_t c = 0; c < consoles; c++){
+//        m_system[c].serial_session().reset();
+//    }
 }
 void MultiSwitchProgramSession::internal_run_program(){
     auto ScopeCheck = m_sanitizer.check_scope();
@@ -146,16 +156,23 @@ void MultiSwitchProgramSession::internal_run_program(){
     FixedLimitVector<ConsoleHandle> handles(consoles);
     for (size_t c = 0; c < consoles; c++){
         SwitchSystemSession& session = m_system[c];
+        if (!session.controller_session().ready()){
+            report_error("Cannot Start: The controller is not ready.");
+            return;
+        }
+        ControllerConnection& connection = session.controller_session().connection();
+        SwitchController& switch_controller = dynamic_cast<SwitchController&>(connection);
         handles.emplace_back(
             c,
             session.logger(),
-            session.sender().botbase(),
+            switch_controller,
             session.video(),
             session.overlay(),
             session.audio(),
             session.stream_history()
         );
     }
+
 
 
     CancellableHolder<CancellableScope> scope;
@@ -183,7 +200,7 @@ void MultiSwitchProgramSession::internal_run_program(){
 
         //  If the exception doesn't already have console information,
         //  attach the 1st console here.
-        e.add_console_if_needed(env.consoles[0]);
+        e.add_stream_if_needed(env.consoles[0]);
 
         std::string message = e.message();
         if (message.empty()){

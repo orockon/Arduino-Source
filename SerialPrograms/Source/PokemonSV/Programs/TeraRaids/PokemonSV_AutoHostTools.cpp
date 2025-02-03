@@ -14,7 +14,6 @@
 #include "CommonFramework/VideoPipeline/VideoFeed.h"
 #include "CommonFramework/Tools/FileDownloader.h"
 #include "CommonFramework/Tools/ProgramEnvironment.h"
-#include "CommonFramework/Tools/ConsoleHandle.h"
 #include "PokemonSV/Options/PokemonSV_AutoHostOptions.h"
 #include "PokemonSV_AutoHostTools.h"
 
@@ -25,7 +24,7 @@ namespace PokemonSV{
 
 
 void send_host_announcement(
-    ProgramEnvironment& env, ConsoleHandle& host_console,
+    ProgramEnvironment& env, VideoStream& host_console,
     const std::string& lobby_code, bool show_raid_code,
     const std::string& description,
     EventNotificationOption& NOTIFICATION_RAID_POST
@@ -74,7 +73,7 @@ void TeraFailTracker::on_raid_start(){
     if (m_consecutive_failures > 0 && !m_completed_one){
         throw_and_log<FatalProgramException>(
             m_env.logger(),
-            ErrorReport::SEND_ERROR_REPORT,
+            ErrorReport::NO_ERROR_REPORT,
             "Failed 1st raid attempt. Will not retry due to risk of ban."
         );
     }
@@ -84,7 +83,7 @@ void TeraFailTracker::on_raid_start(){
         if (minutes == 0){
             throw_and_log<FatalProgramException>(
                 m_env.logger(),
-                ErrorReport::SEND_ERROR_REPORT,
+                ErrorReport::NO_ERROR_REPORT,
                 "Failed " + std::to_string(fail_threshold) +  " raid(s) in the row. "
                 "Stopping to prevent possible ban."
             );

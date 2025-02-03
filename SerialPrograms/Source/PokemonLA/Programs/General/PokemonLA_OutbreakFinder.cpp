@@ -9,17 +9,17 @@
 #include "CommonFramework/GlobalSettingsPanel.h"
 #include "CommonFramework/Exceptions/OperationFailedException.h"
 #include "CommonFramework/ImageTypes/ImageViewRGB32.h"
-//#include "CommonFramework/ImageMatch/ImageCropper.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
 #include "CommonFramework/Notifications/ProgramNotifications.h"
+#include "CommonFramework/ProgramStats/StatsTracking.h"
 #include "CommonFramework/Tools/ErrorDumper.h"
-#include "CommonFramework/Tools/StatsTracking.h"
 #include "CommonFramework/VideoPipeline/VideoFeed.h"
+#include "CommonTools/Async/InferenceRoutines.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "NintendoSwitch/NintendoSwitch_Settings.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "Pokemon/Resources/Pokemon_PokemonNames.h"
 #include "Pokemon/Inference/Pokemon_NameReader.h"
+#include "PokemonLA/PokemonLA_TravelLocations.h"
 #include "PokemonLA/Inference/PokemonLA_DialogDetector.h"
 #include "PokemonLA/Inference/Map/PokemonLA_MapDetector.h"
 #include "PokemonLA/Inference/Map/PokemonLA_SelectedRegionDetector.h"
@@ -140,7 +140,7 @@ OutbreakFinder_Descriptor::OutbreakFinder_Descriptor()
         "Search for an outbreak for a specific " + STRING_POKEMON,
         FeedbackType::REQUIRED,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 class OutbreakFinder_Descriptor::Stats : public StatsTracker{
@@ -231,7 +231,7 @@ OutbreakFinder::OutbreakFinder()
 
 
 std::set<std::string> OutbreakFinder::read_travel_map_outbreaks(
-    SingleSwitchProgramEnvironment& env, BotBaseContext& context,
+    SingleSwitchProgramEnvironment& env, SwitchControllerContext& context,
     const std::set<std::string>& desired_events
 ){
     OutbreakFinder_Descriptor::Stats& stats = env.current_stats<OutbreakFinder_Descriptor::Stats>();
@@ -332,7 +332,7 @@ std::set<std::string> OutbreakFinder::read_travel_map_outbreaks(
 }
 
 
-void OutbreakFinder::goto_region_and_return(SingleSwitchProgramEnvironment& env, BotBaseContext& context, 
+void OutbreakFinder::goto_region_and_return(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context, 
     bool inside_travel_map
 ){
     OutbreakFinder_Descriptor::Stats& stats = env.current_stats<OutbreakFinder_Descriptor::Stats>();
@@ -365,8 +365,9 @@ void OutbreakFinder::goto_region_and_return(SingleSwitchProgramEnvironment& env,
     if (is_wild_land(current_region) == false){
         dump_image(env.console.logger(), env.program_info(), "FindRegion", env.console.video().snapshot());
         OperationFailedException::fire(
-            env.console, ErrorReport::SEND_ERROR_REPORT,
-            "Unable to find a wild land."
+            ErrorReport::SEND_ERROR_REPORT,
+            "Unable to find a wild land.",
+            env.console
         );
     }
 
@@ -401,9 +402,9 @@ void OutbreakFinder::goto_region_and_return(SingleSwitchProgramEnvironment& env,
             ButtonType::ButtonA, ImageFloatBox(0.50, 0.50, 0.30, 0.30),
             std::chrono::milliseconds(200), true
         );
-        int ret = run_until(
+        int ret = run_until<SwitchControllerContext>(
             env.console, context,
-            [](BotBaseContext& context){
+            [](SwitchControllerContext& context){
                 for (size_t c = 0; c < 10; c++){
                     pbf_press_button(context, BUTTON_A, 20, 125);
                 }
@@ -424,7 +425,7 @@ void OutbreakFinder::goto_region_and_return(SingleSwitchProgramEnvironment& env,
 }
 
 std::set<std::string> OutbreakFinder::enter_region_and_read_MMO(
-    SingleSwitchProgramEnvironment& env, BotBaseContext& context,
+    SingleSwitchProgramEnvironment& env, SwitchControllerContext& context,
     const std::string& mmo_name,
     const std::set<std::string>& desired_MMOs,
     const std::set<std::string>& desired_star_MMOs
@@ -483,8 +484,9 @@ std::set<std::string> OutbreakFinder::enter_region_and_read_MMO(
     const int zoom_level = read_map_zoom_level(question_mark_image);
     if (zoom_level < 0){
         OperationFailedException::fire(
-            env.console, ErrorReport::SEND_ERROR_REPORT,
-            "Canot read map zoom level."
+            ErrorReport::SEND_ERROR_REPORT,
+            "Canot read map zoom level.",
+            env.console
         );
     }
 
@@ -547,8 +549,9 @@ std::set<std::string> OutbreakFinder::enter_region_and_read_MMO(
         int ret = wait_until(env.console, context, std::chrono::seconds(10), {{event_dialog_detector}});
         if (ret < 0){
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "Dialog box not detected when waiting for MMO map."
+                ErrorReport::SEND_ERROR_REPORT,
+                "Dialog box not detected when waiting for MMO map.",
+                env.console
             );
         }
     }
@@ -572,8 +575,9 @@ std::set<std::string> OutbreakFinder::enter_region_and_read_MMO(
             break;
         default:
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "Map not detected after talking to Mai."
+                ErrorReport::SEND_ERROR_REPORT,
+                "Map not detected after talking to Mai.",
+                env.console
             );
         }
         break;
@@ -660,7 +664,7 @@ std::set<std::string> OutbreakFinder::enter_region_and_read_MMO(
 
 
 bool OutbreakFinder::run_iteration(
-    SingleSwitchProgramEnvironment& env, BotBaseContext& context,
+    SingleSwitchProgramEnvironment& env, SwitchControllerContext& context,
     const std::set<std::string>& desired_hisui_map_events,
     const std::set<std::string>& desired_outbreaks,
     const std::set<std::string>& desired_MMOs,
@@ -755,7 +759,7 @@ std::set<std::string> OutbreakFinder::to_set(const StringSelectTableOption& opti
     return ret;
 }
 
-void OutbreakFinder::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void OutbreakFinder::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
 //    OutbreakFinder_Descriptor::Stats& stats = env.current_stats<OutbreakFinder_Descriptor::Stats>();
 
     // goto_Mai_from_camp(env.logger(), context, Camp::HIGHLANDS_HIGHLANDS);

@@ -10,6 +10,7 @@
 #include "Common/Cpp/Options/StaticTextOption.h"
 #include "Common/Cpp/Options/SimpleIntegerOption.h"
 #include "Common/Cpp/Options/TimeExpressionOption.h"
+#include "CommonFramework/Notifications/EventNotificationsTable.h"
 #include "NintendoSwitch/Options/NintendoSwitch_StartInGripMenuOption.h"
 #include "NintendoSwitch/NintendoSwitch_SingleSwitchProgram.h"
 #include "PokemonSwSh/Options/PokemonSwSh_EggStepOption.h"
@@ -31,7 +32,7 @@ class EggHatcher : public SingleSwitchProgramInstance{
 public:
     EggHatcher();
 
-    virtual void program(SingleSwitchProgramEnvironment& env, BotBaseContext& context) override;
+    virtual void program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context) override;
 
 
 private:
@@ -43,6 +44,8 @@ private:
     SectionDividerOption m_advanced_options;
     TimeExpressionOption<uint16_t> SAFETY_TIME0;
     TimeExpressionOption<uint16_t> HATCH_DELAY;
+
+    EventNotificationsOption NOTIFICATIONS;
 };
 
 

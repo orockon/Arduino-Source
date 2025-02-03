@@ -33,7 +33,7 @@ EggAutonomous_Descriptor::EggAutonomous_Descriptor()
         "Automatically fetch+hatch eggs and keep all shinies.",
         FeedbackType::REQUIRED,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 std::unique_ptr<StatsTracker> EggAutonomous_Descriptor::make_stats() const{
@@ -147,7 +147,7 @@ EggAutonomous::EggAutonomous()
 
 
 bool EggAutonomous::run_batch(
-    SingleSwitchProgramEnvironment& env, BotBaseContext& context,
+    SingleSwitchProgramEnvironment& env, SwitchControllerContext& context,
     EggAutonomousState& saved_state,
     EggAutonomousState& current_state
 ){
@@ -177,7 +177,7 @@ bool EggAutonomous::run_batch(
     return current_state.process_batch();
 }
 
-void EggAutonomous::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void EggAutonomous::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     EggAutonomousStats& stats = env.current_stats<EggAutonomousStats>();
     env.update_stats();
 
@@ -228,11 +228,12 @@ void EggAutonomous::program(SingleSwitchProgramEnvironment& env, BotBaseContext&
             consecutive_failures++;
             if (consecutive_failures >= 3){
                 OperationFailedException::fire(
-                    env.console, ErrorReport::SEND_ERROR_REPORT,
-                    "Failed 3 batches in the row."
+                    ErrorReport::SEND_ERROR_REPORT,
+                    "Failed 3 batches in the row.",
+                    env.console
                 );
             }
-            pbf_press_button(context, BUTTON_HOME, 20, GameSettings::instance().GAME_TO_HOME_DELAY);
+            pbf_press_button(context, BUTTON_HOME, 160ms, GameSettings::instance().GAME_TO_HOME_DELAY0);
             reset_game_from_home(env, env.console, context, ConsoleSettings::instance().TOLERATE_SYSTEM_UPDATE_MENU_FAST);
             current_state.set(saved_state);
         }

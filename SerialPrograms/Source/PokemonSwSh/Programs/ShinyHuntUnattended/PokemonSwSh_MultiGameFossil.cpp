@@ -4,10 +4,10 @@
  *
  */
 
+#include "NintendoSwitch/NintendoSwitch_Settings.h"
+#include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_Superscalar.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_Routines.h"
-#include "NintendoSwitch/NintendoSwitch_Settings.h"
-#include "NintendoSwitch/FixedInterval.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonSwSh/PokemonSwSh_Settings.h"
 #include "PokemonSwSh/Commands/PokemonSwSh_Commands_GameEntry.h"
@@ -27,7 +27,7 @@ MultiGameFossil_Descriptor::MultiGameFossil_Descriptor()
         "Revive fossils. Supports multiple saves so you can go afk for longer than 5 hours.",
         FeedbackType::NONE,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -39,9 +39,9 @@ MultiGameFossil::MultiGameFossil(){
 }
 
 void run_fossil_batch(
-    ConsoleHandle& console, 
+    VideoStream& stream,
     Logger& logger,
-    BotBaseContext& context,
+    SwitchControllerContext& context,
     const FossilGame& batch,
     bool* game_slot_flipped,
     bool save_and_exit
@@ -129,22 +129,22 @@ void run_fossil_batch(
     }
 
     //  Save game.
-    ssf_press_button2(context, BUTTON_X, GameSettings::instance().OVERWORLD_TO_MENU_DELAY, 20);
+    ssf_press_button(context, BUTTON_X, GameSettings::instance().OVERWORLD_TO_MENU_DELAY0, 160ms);
     ssf_press_button2(context, BUTTON_R, 150, 20);
     ssf_press_button2(context, BUTTON_A, 500, 10);
 
     //  Exit game.
-    ssf_press_button2(context, BUTTON_HOME, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE, 10);
-    close_game(console, context);
+    ssf_press_button(context, BUTTON_HOME, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE0, 80ms);
+    close_game(stream, context);
 }
 
 
-void MultiGameFossil::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void MultiGameFossil::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     if (START_LOCATION.start_in_grip_menu()){
         grip_menu_connect_go_home(context);
     }else{
         pbf_press_button(context, BUTTON_B, 5, 5);
-        pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_FAST);
+        pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_FAST0);
     }
 
     std::vector<std::unique_ptr<FossilGame>> list = GAME_LIST.copy_snapshot();
@@ -159,7 +159,7 @@ void MultiGameFossil::program(SingleSwitchProgramEnvironment& env, BotBaseContex
         run_fossil_batch(env.console, env.logger(), context, *list[c], &game_slot_flipped, c + 1 < games);
     }
 
-    ssf_press_button2(context, BUTTON_HOME, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE, 10);
+    ssf_press_button(context, BUTTON_HOME, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE0, 80ms);
 }
 
 

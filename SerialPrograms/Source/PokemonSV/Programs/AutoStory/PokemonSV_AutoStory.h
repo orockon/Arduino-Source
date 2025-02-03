@@ -7,16 +7,14 @@
 #ifndef PokemonAutomation_PokemonSV_AutoStory_H
 #define PokemonAutomation_PokemonSV_AutoStory_H
 
-#include <functional>
 #include "Common/Cpp/Options/StaticTextOption.h"
 #include "Common/Cpp/Options/SimpleIntegerOption.h"
 #include "Common/Cpp/Options/FloatingPointOption.h"
 #include "Common/Cpp/Options/EnumDropdownOption.h"
 #include "CommonFramework/Notifications/EventNotificationsTable.h"
-#include "CommonFramework/Options/LanguageOCROption.h"
-#include "CommonFramework/Options/StringSelectOption.h"
+#include "CommonTools/Options/StringSelectOption.h"
+#include "CommonTools/Options/LanguageOCROption.h"
 #include "NintendoSwitch/Options/NintendoSwitch_GoHomeWhenDoneOption.h"
-#include "PokemonSV/Programs/PokemonSV_Navigation.h"
 #include "PokemonSV_AutoStoryTools.h"
 
 namespace PokemonAutomation{
@@ -38,21 +36,21 @@ public:
     ~AutoStory();
     AutoStory();
 
-    virtual void program(SingleSwitchProgramEnvironment& env, BotBaseContext& context) override;
+    virtual void program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context) override;
 
-    void test_code(SingleSwitchProgramEnvironment& env, BotBaseContext& context);
+    void test_code(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context);
 
     // test the checkpoints from start to end, inclusive
     // test each checkpoints "loop" number of times
     void test_checkpoints(
         SingleSwitchProgramEnvironment& env,
-        ConsoleHandle& console, 
-        BotBaseContext& context,
+        VideoStream& stream,
+        SwitchControllerContext& context,
         int start, int end, 
         int loop, int start_loop, int end_loop
     );
 
-    void run_autostory(SingleSwitchProgramEnvironment& env, BotBaseContext& context);
+    void run_autostory(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context);
 
 private:
     virtual void value_changed(void* object) override;

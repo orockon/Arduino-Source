@@ -14,12 +14,9 @@
 #include "Common/Cpp/Containers/FixedLimitVector.tpp"
 #include "Common/Cpp/Concurrency/AsyncDispatcher.h"
 #include "Common/Cpp/Concurrency/PeriodicScheduler.h"
-#include "ClientSource/Connection/BotBase.h"
 #include "CommonFramework/Exceptions/OperationFailedException.h"
-#include "CommonFramework/InferenceInfra/InferenceSession.h"
-#include "CommonFramework/OCR/OCR_RawOCR.h"
+#include "CommonTools/OCR/OCR_RawOCR.h"
 #include "PokemonLA/Inference/PokemonLA_MountDetector.h"
-#include "CommonFramework/InferenceInfra/VisualInferencePivot.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonBDSP/Inference/BoxSystem/PokemonBDSP_IvJudgeReader.h"
 #include "PokemonBDSP/Inference/Battles/PokemonBDSP_BattleBallReader.h"
@@ -28,22 +25,16 @@
 #include "PokemonLA/Inference/Objects/PokemonLA_FlagTracker.h"
 #include "PokemonSwSh/MaxLair/Inference/PokemonSwSh_MaxLair_Detect_BattleMenu.h"
 #include "PokemonBDSP/Inference/BoxSystem/PokemonBDSP_BoxGenderDetector.h"
-#include "CommonFramework/ImageTools/SolidColorTest.h"
 #include "PokemonBDSP/Inference/Battles/PokemonBDSP_BattleMenuDetector.h"
 #include "PokemonLA/Inference/Map/PokemonLA_MapZoomLevelReader.h"
 #include "PokemonSwSh/MaxLair/Inference/PokemonSwSh_MaxLair_Detect_PokemonSwapMenu.h"
-#include "CommonFramework/Inference/FrozenImageDetector.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
 #include "PokemonSwSh/Inference/Battles/PokemonSwSh_BattleMenuDetector.h"
 #include "PokemonLA/Inference/Objects/PokemonLA_ShinySymbolDetector.h"
 #include "PokemonLA/Inference/Battles/PokemonLA_BattleMenuDetector.h"
 #include "PokemonSwSh/Inference/PokemonSwSh_SummaryShinySymbolDetector.h"
-#include "CommonFramework/ImageTools/ImageFilter.h"
-#include "CommonFramework/ImageMatch/ImageDiff.h"
-#include "CommonFramework/OCR/OCR_NumberReader.h"
+#include "CommonTools/OCR/OCR_NumberReader.h"
 #include "NintendoSwitch/Inference/NintendoSwitch_DetectHome.h"
 #include "PokemonLA/Inference/Objects/PokemonLA_FlagTracker.h"
-#include "CommonFramework/ImageTools/BinaryImage_FilterRgb32.h"
 #include "Kernels/Waterfill/Kernels_Waterfill.h"
 #include "Kernels/Waterfill/Kernels_Waterfill_Session.h"
 #include "PokemonSV/Inference/PokemonSV_WhiteButtonDetector.h"
@@ -72,7 +63,6 @@
 #include "PokemonSV/Inference/Boxes/PokemonSV_BoxDetection.h"
 #include "PokemonSV/Programs/Trading/PokemonSV_TradeRoutines.h"
 #include "CommonFramework/Notifications/ProgramNotifications.h"
-#include "CommonFramework/Tools/InterruptableCommands.h"
 #include "PokemonSV/Programs/Boxes/PokemonSV_BoxRoutines.h"
 #include "PokemonSV/Programs/Eggs/PokemonSV_EggRoutines.h"
 #include "CommonFramework/Tools/ErrorDumper.h"
@@ -81,13 +71,9 @@
 #include "PokemonSV/Programs/TeraRaids/PokemonSV_TeraRoutines.h"
 #include "PokemonSV/Programs/FastCodeEntry/PokemonSV_CodeEntry.h"
 #include "PokemonSV/Inference/Overworld/PokemonSV_AreaZeroSkyDetector.h"
-#include "CommonFramework/Inference/AudioPerSpectrumDetectorBase.h"
-#include "CommonFramework/Inference/SpectrogramMatcher.h"
-#include "CommonFramework/Inference/AudioTemplateCache.h"
 #include "PokemonSV/Inference/Battles/PokemonSV_EncounterWatcher.h"
 #include "PokemonSV/Inference/Overworld/PokemonSV_LetsGoKillDetector.h"
 #include "CommonFramework/Exceptions/ProgramFinishedException.h"
-#include "CommonFramework/Inference/BlackScreenDetector.h"
 #include "PokemonSV/Inference/PokemonSV_ZeroGateWarpPromptDetector.h"
 #include "PokemonSV/Programs/ShinyHunting/PokemonSV_AreaZeroPlatform.h"
 #include "PokemonSV/Inference/PokemonSV_SweatBubbleDetector.h"
@@ -102,7 +88,6 @@
 #include "PokemonSwSh/Inference/Battles/PokemonSwSh_BattleBallReader.h"
 #include "PokemonSwSh/MaxLair/Inference/PokemonSwSh_MaxLair_Detect_PathSelect.h"
 #include "PokemonSV/Programs/PokemonSV_ConnectToInternet.h"
-#include "CommonFramework/Inference/FrozenImageDetector.h"
 #include "PokemonLA/Inference/PokemonLA_DialogDetector.h"
 #include "PokemonLA/Programs/PokemonLA_GameSave.h"
 #include "Pokemon/Resources/Pokemon_PokemonSlugs.h"
@@ -128,6 +113,8 @@
 //#include "PokemonSwSh/Inference/Battles/PokemonSwSh_BattleMenuDetector.h"
 #include "PokemonSwSh/MaxLair/Inference/PokemonSwSh_MaxLair_Detect_BattleMenu.h"
 #include "PokemonSwSh/MaxLair/Inference/PokemonSwSh_MaxLair_Detect_PokemonSwapMenu.h"
+#include "PokemonBDSP/Inference/PokemonBDSP_SelectionArrow.h"
+#include "NintendoSwitch/Commands/NintendoSwitch_Commands_DigitEntry.h"
 
 
 #include <QPixmap>
@@ -146,6 +133,11 @@ using namespace PokemonAutomation::Kernels::Waterfill;
 
 namespace PokemonAutomation{
 namespace NintendoSwitch{
+
+uint16_t scroll_to(
+    SwitchControllerContext& context,
+    uint8_t start_digit, uint8_t end_digit, bool actually_scroll
+);
 
 
 namespace PokemonSwSh{
@@ -176,7 +168,7 @@ TestProgram_Descriptor::TestProgram_Descriptor()
         "Test Program (Switch)",
         FeedbackType::OPTIONAL_,
         AllowCommandsWhenRunning::ENABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB,
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS},
         1, 4, 1
     )
 {}
@@ -219,6 +211,11 @@ TestProgram::TestProgram()
         DateTime{2060, 12, 31, 23, 59, 59},
         DateTime{2048, 1, 13, 20, 48}
     )
+    , DURATION(
+        "Duration",
+        LockMode::UNLOCK_WHILE_RUNNING,
+        "100"
+    )
     , NOTIFICATION_TEST("Test", true, true, ImageAttachmentMode::JPG)
     , NOTIFICATIONS({
         &NOTIFICATION_TEST,
@@ -235,6 +232,7 @@ TestProgram::TestProgram()
 //    PA_ADD_OPTION(battle_AI);
     PA_ADD_OPTION(DATE0);
     PA_ADD_OPTION(DATE1);
+    PA_ADD_OPTION(DURATION);
     PA_ADD_OPTION(NOTIFICATIONS);
     BUTTON0.add_listener(*this);
     BUTTON1.add_listener(*this);
@@ -266,9 +264,9 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
     using namespace OCR;
     using namespace NintendoSwitch;
     using namespace Pokemon;
-//    using namespace PokemonSwSh;
+    using namespace PokemonSwSh;
 //    using namespace PokemonBDSP;
-    using namespace PokemonLA;
+//    using namespace PokemonLA;
 //    using namespace PokemonSV;
 
     [[maybe_unused]] Logger& logger = env.logger();
@@ -276,8 +274,94 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
 //    [[maybe_unused]] BotBase& botbase = env.consoles[0];
     [[maybe_unused]] VideoFeed& feed = env.consoles[0];
     [[maybe_unused]] VideoOverlay& overlay = env.consoles[0];
-    BotBaseContext context(scope, console.botbase());
+    SwitchControllerContext context(scope, console.controller());
     VideoOverlaySet overlays(overlay);
+
+
+    ssf_press_button(context, BUTTON_A, 0);
+    ssf_do_nothing(context, 4);
+    ssf_press_button(context, BUTTON_A, 0);
+    ssf_do_nothing(context, 4);
+    ssf_press_button(context, BUTTON_A, 0);
+    ssf_do_nothing(context, 4);
+    ssf_press_button(context, BUTTON_A, 0);
+    ssf_do_nothing(context, 4);
+
+
+
+
+//    enter_digits(context, 8, (const uint8_t*)"56685459");
+
+#if 0
+    for (int c = 0; c < 10; c++){
+        scroll_to(context, 1, 9, true);
+        scroll_to(context, 9, 1, true);
+    }
+//    pbf_wait(context, 100);
+#endif
+
+
+#if 0
+    ImageRGB32 image("20250131-170450792229.png");
+
+    PokemonSwSh::BattleBallReader reader(console, Language::Korean);
+    reader.read_ball(image);
+#endif
+
+
+
+#if 0
+    ImageRGB32 image("20250125-232444699636.png");
+
+//    TeraSilhouetteReader reader;
+//    ImageMatch::ImageMatchResult results = reader.read(image);
+//    results.log(logger, 110);
+
+    TeraTypeReader reader;
+    ImageMatch::ImageMatchResult results = reader.read(image);
+    results.log(logger, 100);
+#endif
+
+#if 0
+    ImageRGB32 image("20250125-224044294692.png");
+    MaxLairInternal::BattleMenuReader reader(overlay, Language::English);
+    std::set<std::string> slugs = reader.read_opponent_in_summary(logger, image);
+
+    cout << set_to_str(slugs) << endl;
+#endif
+
+//    ssf_press_button(context, BUTTON_A, 0, 1000, 0);
+//    pbf_move_left_joystick(context, 0, 0, 20, 0);
+
+
+
+
+//    ImageRGB32 image("20250115-110356822901.png");
+//    ImageRGB32 image("raidecho1.jpg");
+//    auto image = feed.snapshot();
+
+//    MaxLairInternal::BattleMenuReader reader(overlay, Language::English);
+//    reader.read_opponent_in_summary(logger, image);
+
+//    TeraCardReader reader;
+//    cout << (int)reader.stars(logger, env.program_info(), image) << endl;
+
+
+
+
+
+
+#if 0
+    ImageRGB32 image("20250112-194339635973.png");
+
+    PokemonBDSP::SelectionArrowFinder detector0(console, {0.50, 0.58, 0.40, 0.10}, COLOR_RED);
+    PokemonBDSP::SelectionArrowFinder detector1(console, {0.50, 0.52, 0.40, 0.10}, COLOR_RED);
+
+    cout << detector0.detect(image) << endl;
+    cout << detector1.detect(image) << endl;
+#endif
+
+
 
 #if 0
     PokemonSwSh::MaxLairInternal::PokemonSwapMenuReader reader(console, overlay, Language::English);
@@ -341,9 +425,9 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
     );
 #endif
 
-#if 1
+#if 0
     VideoSnapshot image = feed.snapshot();
-//    ImageRGB32 image("screenshot-20241124-135028529403.png");
+//    ImageRGB32 image("20250108-151305644248.png");
 
     DateReader date_reader;
     date_reader.make_overlays(overlays);
@@ -1035,9 +1119,9 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
         NormalBattleMenuWatcher battle_menu(COLOR_RED);
         AreaZeroSkyTracker sky_tracker(overlay);
         context.wait_for_all_requests();
-        int ret = run_until(
+        int ret = run_until<SwitchControllerContext>(
             console, context,
-            [&](BotBaseContext& context){
+            [&](SwitchControllerContext& context){
                 while (true){
                     switch (count++ % 2){
                     case 0:
@@ -1122,7 +1206,7 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
     ConsoleHandle& host = env.consoles[host_index];
     BotBaseContext host_context(scope, host.botbase());
 
-    env.run_in_parallel(scope, [&](ConsoleHandle& console, BotBaseContext& context){
+    env.run_in_parallel(scope, [&](ConsoleHandle& console, SwitchControllerContext& context){
         if (console.index() == host_index){
             open_raid(console, context);
         }else{
@@ -1141,7 +1225,7 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
         OperationFailedException::fire(env.logger(), "Unable to read raid code.");
     }
 
-    env.run_in_parallel(scope, [&](ConsoleHandle& console, BotBaseContext& context){
+    env.run_in_parallel(scope, [&](ConsoleHandle& console, SwitchControllerContext& context){
         if (console.index() == host_index){
             return;
         }
@@ -1408,12 +1492,12 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
 
 #if 0
     AsyncCommandSession session(scope, logger, env.realtime_dispatcher(), context.botbase());
-    session.dispatch([](BotBaseContext& context){
+    session.dispatch([](SwitchControllerContext& context){
 //        pbf_controller_state(context, 0, DPAD_NONE, 128, 0, 128, 128, 255);
         pbf_press_button(context, BUTTON_A, 255, 0);
     });
     context.wait_for(std::chrono::seconds(2));
-    session.dispatch([](BotBaseContext& context){
+    session.dispatch([](SwitchControllerContext& context){
 //        pbf_controller_state(context, BUTTON_B, DPAD_NONE, 128, 0, 128, 128, 255);
         pbf_press_button(context, BUTTON_B, 255, 0);
     });
@@ -1640,7 +1724,7 @@ void TestProgram::program(MultiSwitchProgramEnvironment& env, CancellableScope& 
     TradeStats stats;
     env.run_in_parallel(
         scope,
-        [&](ConsoleHandle& console, BotBaseContext& context){
+        [&](ConsoleHandle& console, SwitchControllerContext& context){
             trade_current_pokemon(console, context, state, stats);
         }
     );

@@ -12,15 +12,15 @@
 #include "Common/Cpp/Options/BooleanCheckBoxOption.h"
 #include "Common/Cpp/Options/ButtonOption.h"
 #include "Common/Cpp/Options/DateOption.h"
-#include "CommonFramework/Options/StringSelectOption.h"
-#include "CommonFramework/Options/LanguageOCROption.h"
+#include "Common/Cpp/Options/TimeDurationOption.h"
 #include "CommonFramework/Notifications/EventNotificationsTable.h"
+#include "CommonFramework/ProgramStats/StatsTracking.h"
+#include "CommonTools/Options/LanguageOCROption.h"
 #include "NintendoSwitch/NintendoSwitch_SingleSwitchProgram.h"
 #include "NintendoSwitch/NintendoSwitch_MultiSwitchProgram.h"
 #include "PokemonSwSh/Options/PokemonSwSh_BallSelectOption.h"
 #include "PokemonSwSh/Options/EncounterFilter/PokemonSwSh_EncounterFilterOption.h"
 #include "PokemonSV/Options/PokemonSV_PlayerList.h"
-#include "CommonFramework/Tools/StatsTracking.h"
 #include "PokemonSV/Options/PokemonSV_SinglesAIOption.h"
 
 namespace PokemonAutomation{
@@ -73,6 +73,8 @@ private:
 //    PokemonSV::PlayerListTable PLAYER_LIST;
     DateTimeOption DATE0;
     DateTimeOption DATE1;
+
+    MillisecondsOption DURATION;
 
 
 //    PokemonSV::SinglesAIOption battle_AI;

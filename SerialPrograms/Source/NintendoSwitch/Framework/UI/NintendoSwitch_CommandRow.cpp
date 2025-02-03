@@ -7,26 +7,30 @@
 #include <QHBoxLayout>
 #include "CommonFramework/GlobalSettingsPanel.h"
 #include "CommonFramework/Options/Environment/ThemeSelectorOption.h"
-#include "CommonFramework/VideoPipeline/UI/VideoOverlayWidget.h"
 #include "CommonFramework/Recording/StreamHistoryOption.h"
 #include "NintendoSwitch_CommandRow.h"
+
+//#include <iostream>
+//using std::cout;
+//using std::endl;
 
 namespace PokemonAutomation{
 namespace NintendoSwitch{
 
 
 CommandRow::~CommandRow(){
+    m_controller.remove_listener(*this);
     m_session.remove_listener(*this);
 }
 CommandRow::CommandRow(
     QWidget& parent,
-    BotBaseHandle& botbase,
+    ControllerSession& controller,
     VideoOverlaySession& session,
     bool allow_commands_while_running
 )
     : QWidget(&parent)
-    , VirtualController(botbase, allow_commands_while_running)
-    , m_botbase(botbase)
+    , VirtualController(controller, allow_commands_while_running)
+    , m_controller(controller)
     , m_session(session)
     , m_allow_commands_while_running(allow_commands_while_running)
     , m_last_known_focus(false)
@@ -139,19 +143,18 @@ CommandRow::CommandRow(
 #endif
 
     m_session.add_listener(*this);
+    m_controller.add_listener(*this);
 }
 
-bool CommandRow::on_key_press(Qt::Key key){
+void CommandRow::on_key_press(const QKeyEvent& key){
     if (m_last_known_focus){
-        return VirtualController::on_key_press(key);
+        VirtualController::on_key_press(key);
     }
-    return false;
 }
-bool CommandRow::on_key_release(Qt::Key key){
+void CommandRow::on_key_release(const QKeyEvent& key){
     if (m_last_known_focus){
-        return VirtualController::on_key_release(key);
+        VirtualController::on_key_release(key);
     }
-    return false;
 }
 
 void CommandRow::set_focus(bool focused){
@@ -166,6 +169,8 @@ void CommandRow::set_focus(bool focused){
 }
 
 void CommandRow::update_ui(){
+//    cout << "CommandRow::update_ui(): focus = " << m_last_known_focus << endl;
+
     bool stopped = last_known_state() == ProgramState::STOPPED;
     m_load_profile_button->setEnabled(stopped);
     if (!m_allow_commands_while_running){
@@ -180,34 +185,36 @@ void CommandRow::update_ui(){
         }
     }
 
-    BotBaseHandle::State state = m_botbase.state();
-    if (state == BotBaseHandle::State::READY){
-        if (!m_botbase.accepting_commands()){
-            m_status->setText(
-                QString::fromStdString(
-                    html_color_text("Device does not accept commands.", COLOR_RED)
-                )
-            );
-        }else if (!m_last_known_focus){
-            m_status->setText(
-                QString::fromStdString(
-                    html_color_text("Click on the video to enable.", COLOR_PURPLE)
-                )
-            );
-        }else{
-            m_status->setText(
-                QString::fromStdString(
-                    html_color_text("Keyboard Control Active!", COLOR_DARKGREEN)
-                )
-            );
-        }
-    }else{
+
+    if (!m_controller.ready()){
         m_status->setText(
             QString::fromStdString(
-                html_color_text("The connection is not ready.", COLOR_RED)
+                html_color_text("The controller is not ready.", COLOR_RED)
             )
         );
+        return;
     }
+
+    std::string error = m_controller.user_input_blocked();
+    if (!error.empty()){
+        m_status->setText(QString::fromStdString(error));
+        return;
+    }
+
+    if (!m_last_known_focus){
+        m_status->setText(
+            QString::fromStdString(
+                html_color_text("Click on the video to enable.", COLOR_PURPLE)
+            )
+        );
+        return;
+    }
+
+    m_status->setText(
+        QString::fromStdString(
+            html_color_text("Keyboard Control Active!", COLOR_DARKGREEN)
+        )
+    );
 }
 
 void CommandRow::on_state_changed(ProgramState state){
@@ -236,7 +243,12 @@ void CommandRow::enabled_stats(bool enabled){
         this->m_overlay_stats->setChecked(enabled);
     }, Qt::QueuedConnection);
 }
-
+void CommandRow::ready_changed(bool ready){
+//    cout << "CommandRow::ready_changed(): " << ready << endl;
+    QMetaObject::invokeMethod(this, [this]{
+        update_ui();
+    }, Qt::QueuedConnection);
+}
 
 
 

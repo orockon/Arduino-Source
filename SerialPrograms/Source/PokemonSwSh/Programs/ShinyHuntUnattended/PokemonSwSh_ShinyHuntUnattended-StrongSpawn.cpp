@@ -27,7 +27,7 @@ ShinyHuntUnattendedStrongSpawn_Descriptor::ShinyHuntUnattendedStrongSpawn_Descri
         "Hunt for shiny strong spawns. Stop when a shiny is found.",
         FeedbackType::NONE,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -56,16 +56,18 @@ ShinyHuntUnattendedStrongSpawn::ShinyHuntUnattendedStrongSpawn()
 
 
 
-void ShinyHuntUnattendedStrongSpawn::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void ShinyHuntUnattendedStrongSpawn::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     if (START_LOCATION.start_in_grip_menu()){
         grip_menu_connect_go_home(context);
     }else{
         pbf_press_button(context, BUTTON_B, 5, 5);
-        pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_FAST);
+        pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_FAST0);
     }
 
-    const uint32_t PERIOD = (uint32_t)TIME_ROLLBACK_HOURS * 3600 * TICKS_PER_SECOND;
-    uint32_t last_touch = system_clock(context);
+    WallDuration PERIOD = std::chrono::hours(TIME_ROLLBACK_HOURS);
+    WallClock last_touch = current_time();
+//    const uint32_t PERIOD = (uint32_t)TIME_ROLLBACK_HOURS * 3600 * TICKS_PER_SECOND;
+//    uint32_t last_touch = system_clock(context);
     for (uint32_t c = 0; ; c++){
 
         //  If the update menu isn't there, these will get swallowed by the opening
@@ -80,10 +82,10 @@ void ShinyHuntUnattendedStrongSpawn::program(SingleSwitchProgramEnvironment& env
 
         //  Switch to mashing ZR instead of A to get into the game.
         //  Mash your way into the game.
-        uint16_t duration = GameSettings::instance().START_GAME_MASH;
+        Milliseconds duration = GameSettings::instance().START_GAME_MASH0;
         if (ConsoleSettings::instance().START_GAME_REQUIRES_INTERNET){
             //  Need to wait a bit longer for the internet check.
-            duration += ConsoleSettings::instance().START_GAME_INTERNET_CHECK_DELAY;
+            duration += ConsoleSettings::instance().START_GAME_INTERNET_CHECK_DELAY0;
         }
         pbf_mash_button(context, BUTTON_ZR, duration);
 
@@ -102,7 +104,8 @@ void ShinyHuntUnattendedStrongSpawn::program(SingleSwitchProgramEnvironment& env
 
         //  Touch the date and conditional close game.
 //        if (true){
-        if (TIME_ROLLBACK_HOURS > 0 && system_clock(context) - last_touch >= PERIOD){
+        if (TIME_ROLLBACK_HOURS > 0 && current_time() - last_touch >= PERIOD){
+//        if (TIME_ROLLBACK_HOURS > 0 && system_clock(context) - last_touch >= PERIOD){
             last_touch += PERIOD;
             close_game_if_overworld(env.console, context, false, TIME_ROLLBACK_HOURS);
         }else{

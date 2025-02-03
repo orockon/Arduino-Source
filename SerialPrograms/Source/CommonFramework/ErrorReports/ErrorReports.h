@@ -7,6 +7,7 @@
 #ifndef PokemonAutomation_ErrorReports_H
 #define PokemonAutomation_ErrorReports_H
 
+#include <memory>
 #include "Common/Cpp/AbstractLogger.h"
 #include "Common/Cpp/Options/GroupOption.h"
 #include "Common/Cpp/Options/StaticTextOption.h"
@@ -19,7 +20,8 @@
 namespace PokemonAutomation{
 
 
-class ConsoleHandle;
+class AsyncTask;
+class StreamHistorySession;
 
 
 extern const std::string& ERROR_LOGS_NAME;
@@ -63,7 +65,7 @@ public:
         std::string title = "",
         std::vector<std::pair<std::string, std::string>> messages = {},
         const ImageViewRGB32& image = ImageViewRGB32(),
-        ConsoleHandle* console = nullptr
+        const StreamHistorySession* stream_history = nullptr
     );
 
     //  Deserialize from existing report.
@@ -76,10 +78,10 @@ public:
     void add_file(std::string filename);
 
     void save(Logger* logger) const;
-    bool send(Logger& logger);
     void move_to_sent();
 
     static std::vector<std::string> get_pending_reports();
+    static void send(Logger& logger, std::shared_ptr<SendableErrorReport> report);
 
 private:
     std::string m_timestamp;
@@ -87,7 +89,7 @@ private:
     std::string m_processor;
     std::string m_program;
     std::string m_program_id;
-    uint64_t m_program_runtime_millis;
+    uint64_t m_program_runtime_millis = 0;
     std::string m_title;
     std::vector<std::pair<std::string, std::string>> m_messages;
     ImageRGB32 m_image_owner;
@@ -100,7 +102,7 @@ private:
 
 
 void send_reports(Logger& logger, const std::vector<std::string>& reports);
-void send_all_unsent_reports(Logger& logger, bool allow_prompt);
+std::unique_ptr<AsyncTask> send_all_unsent_reports(Logger& logger, bool allow_prompt);
 
 
 void report_error(
@@ -109,7 +111,7 @@ void report_error(
     std::string title = "",
     std::vector<std::pair<std::string, std::string>> messages = {},
     const ImageViewRGB32& image = ImageViewRGB32(),
-    ConsoleHandle* console = nullptr,
+    const StreamHistorySession* stream_history = nullptr,
     const std::vector<std::string>& files = {}
 );
 

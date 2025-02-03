@@ -10,6 +10,8 @@
 #include "CommonFramework/Exceptions/OperationFailedException.h"
 
 namespace PokemonAutomation{
+namespace NintendoSwitch{
+namespace PokemonSV{
 
 class FatalProgramException;
 
@@ -29,10 +31,10 @@ public:
     OliveActionFailedException(
         ErrorReport error_report,
         std::string message,
-        ConsoleHandle& console,
+        VideoStream& stream,
         OliveFail fail_reason = OliveFail::NONE
     )
-        : OperationFailedException(error_report, std::move(message), console)
+        : OperationFailedException(error_report, std::move(message), stream)
         , m_fail_reason(fail_reason)
     {}
     virtual const char* name() const override{ return "OliveActionFailedException"; }
@@ -45,6 +47,7 @@ public:
 
 
 
-
+}
+}
 }
 #endif

@@ -5,10 +5,10 @@
  */
 
 #include "CommonFramework/Exceptions/OperationFailedException.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
 #include "CommonFramework/Notifications/ProgramNotifications.h"
-#include "CommonFramework/Tools/StatsTracking.h"
-#include "CommonFramework/Tools/VideoResolutionCheck.h"
+#include "CommonFramework/ProgramStats/StatsTracking.h"
+#include "CommonTools/Async/InferenceRoutines.h"
+#include "CommonTools/StartupChecks/VideoResolutionCheck.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonSV/Inference/Dialogs/PokemonSV_DialogDetector.h"
@@ -34,7 +34,7 @@ SizeChecker_Descriptor::SizeChecker_Descriptor()
         "Check boxes of " + STRING_POKEMON + " for size marks.",
         FeedbackType::REQUIRED,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 struct SizeChecker_Descriptor::Stats : public StatsTracker{
@@ -85,15 +85,16 @@ SizeChecker::SizeChecker()
 
 
 
-void SizeChecker::enter_check_mode(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void SizeChecker::enter_check_mode(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     env.console.log("Enter box mode to check size...");
     WallClock start = current_time();
 
     while (true){
         if (current_time() - start > std::chrono::minutes(2)){
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "enter_check_mode(): Failed to enter box mode after 2 minutes."
+                ErrorReport::SEND_ERROR_REPORT,
+                "enter_check_mode(): Failed to enter box mode after 2 minutes.",
+                env.console
             );
         }
         
@@ -123,8 +124,9 @@ void SizeChecker::enter_check_mode(SingleSwitchProgramEnvironment& env, BotBaseC
 
         default:
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "enter_check_mode(): No recognized state after 60 seconds."
+                ErrorReport::SEND_ERROR_REPORT,
+                "enter_check_mode(): No recognized state after 60 seconds.",
+                env.console
             );
         }
     }
@@ -133,7 +135,7 @@ void SizeChecker::enter_check_mode(SingleSwitchProgramEnvironment& env, BotBaseC
 
 
 
-void SizeChecker::exit_check_mode(SingleSwitchProgramEnvironment& env, BotBaseContext& context, VideoSnapshot screen){
+void SizeChecker::exit_check_mode(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context, VideoSnapshot screen){
     SizeChecker_Descriptor::Stats& stats = env.current_stats<SizeChecker_Descriptor::Stats>();
     env.console.log("Check size and exit box mode...");
     WallClock start = current_time();
@@ -141,8 +143,9 @@ void SizeChecker::exit_check_mode(SingleSwitchProgramEnvironment& env, BotBaseCo
     while (true){
         if (current_time() - start > std::chrono::minutes(2)){
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "exit_check_mode(): Failed to exit box mode after 2 minutes."
+                ErrorReport::SEND_ERROR_REPORT,
+                "exit_check_mode(): Failed to exit box mode after 2 minutes.",
+                env.console
             );
         }
 
@@ -179,8 +182,9 @@ void SizeChecker::exit_check_mode(SingleSwitchProgramEnvironment& env, BotBaseCo
 
         default:
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "exit_check_mode(): No recognized state after 60 seconds."
+                ErrorReport::SEND_ERROR_REPORT,
+                "exit_check_mode(): No recognized state after 60 seconds.",
+                env.console
             );
         }
 
@@ -190,7 +194,7 @@ void SizeChecker::exit_check_mode(SingleSwitchProgramEnvironment& env, BotBaseCo
 
 
 
-void SizeChecker::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void SizeChecker::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     assert_16_9_720p_min(env.logger(), env.console);
 
     SizeChecker_Descriptor::Stats& stats = env.current_stats<SizeChecker_Descriptor::Stats>();
@@ -241,9 +245,9 @@ void SizeChecker::program(SingleSwitchProgramEnvironment& env, BotBaseContext& c
 
                 // Initiate size checking prompt.
                 DialogBoxWatcher dialog(COLOR_GREEN, true, std::chrono::milliseconds(250), DialogType::DIALOG_WHITE);
-                int ret = run_until(
+                int ret = run_until<SwitchControllerContext>(
                     env.console, context,
-                    [](BotBaseContext& context){
+                    [](SwitchControllerContext& context){
                         for (size_t c = 0; c < 10; c++){
                             pbf_press_button(context, BUTTON_A, 20, 105);
                         }
@@ -252,8 +256,9 @@ void SizeChecker::program(SingleSwitchProgramEnvironment& env, BotBaseContext& c
                 );
                 if (ret < 0){
                     OperationFailedException::fire(
-                        env.console, ErrorReport::SEND_ERROR_REPORT,
-                        "Unable to initiate check after 10 A presses."
+                        ErrorReport::SEND_ERROR_REPORT,
+                        "Unable to initiate check after 10 A presses.",
+                        env.console
                     );
                 }
                 context.wait_for_all_requests();

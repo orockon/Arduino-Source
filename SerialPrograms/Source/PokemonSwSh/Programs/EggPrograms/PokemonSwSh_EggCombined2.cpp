@@ -4,6 +4,7 @@
  *
  */
 
+#include "CommonFramework/Notifications/ProgramNotifications.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonSwSh/Programs/PokemonSwSh_GameEntry.h"
 #include "PokemonSwSh_EggCombinedShared.h"
@@ -23,7 +24,7 @@ EggCombined2_Descriptor::EggCombined2_Descriptor()
         "Fetch and hatch eggs at the same time. (Fastest - 1700 eggs/day for 5120-step)",
         FeedbackType::NONE,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -40,6 +41,9 @@ EggCombined2::EggCombined2()
         LockMode::LOCK_WHILE_RUNNING,
         6.0, 0, 7
     )
+    , NOTIFICATIONS({
+        &NOTIFICATION_PROGRAM_FINISH,
+    })
     , m_advanced_options(
         "<font size=4><b>Advanced Options:</b> You should not need to touch anything below here.</font>"
     )
@@ -68,13 +72,15 @@ EggCombined2::EggCombined2()
     PA_ADD_OPTION(BOXES_TO_HATCH);
     PA_ADD_OPTION(STEPS_TO_HATCH);
     PA_ADD_OPTION(FETCHES_PER_BATCH);
+    PA_ADD_OPTION(NOTIFICATIONS);
+
     PA_ADD_STATIC(m_advanced_options);
     PA_ADD_OPTION(SAFETY_TIME);
     PA_ADD_OPTION(EARLY_HATCH_SAFETY);
     PA_ADD_OPTION(HATCH_DELAY);
 }
 
-void EggCombined2::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void EggCombined2::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     EggCombinedSession session{
         BOXES_TO_HATCH,
         STEPS_TO_HATCH,
@@ -93,6 +99,8 @@ void EggCombined2::program(SingleSwitchProgramEnvironment& env, BotBaseContext& 
     }
 
     session.eggcombined2_body(env.console, context);
+
+    send_program_finished_notification(env, NOTIFICATION_PROGRAM_FINISH);
 }
 
 

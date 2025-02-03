@@ -5,7 +5,7 @@
  */
 
 #include "CommonFramework/Globals.h"
-#include "CommonFramework/InferenceInfra/InferenceSession.h"
+#include "CommonTools/Async/InferenceSession.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "NintendoSwitch/NintendoSwitch_Settings.h"
 #include "Pokemon/Pokemon_Strings.h"
@@ -30,7 +30,7 @@ CurryHunter_Descriptor::CurryHunter_Descriptor()
         "<font color=\"red\">(This program cannot detect shinies. You must check manually or with " + STRING_POKEMON + " HOME.)</font>",
         FeedbackType::OPTIONAL_,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 struct CurryHunter_Descriptor::Stats : public ShinyHuntTracker{
@@ -82,7 +82,7 @@ CurryHunter::CurryHunter()
 
 
 
-void CurryHunter::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void CurryHunter::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     if (START_LOCATION.start_in_grip_menu()){
         grip_menu_connect_go_home(context);
         resume_game_no_interact(env.console, context, ConsoleSettings::instance().TOLERATE_SYSTEM_UPDATE_MENU_FAST);
@@ -301,7 +301,7 @@ void CurryHunter::program(SingleSwitchProgramEnvironment& env, BotBaseContext& c
 
     //  Not really relevant here, but for programs that finish, go to
     //  Switch home to idle.
-    pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE);
+    pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE0);
 }
 
 

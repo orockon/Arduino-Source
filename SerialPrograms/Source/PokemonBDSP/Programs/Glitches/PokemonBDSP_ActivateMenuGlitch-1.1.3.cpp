@@ -6,7 +6,7 @@
 
 #include <QtGlobal>
 #include "CommonFramework/Exceptions/OperationFailedException.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
+#include "CommonTools/Async/InferenceRoutines.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonBDSP/PokemonBDSP_Settings.h"
@@ -16,7 +16,9 @@
 namespace PokemonAutomation{
 namespace NintendoSwitch{
 namespace PokemonBDSP{
-    using namespace Pokemon;
+
+using namespace Pokemon;
+
 
 
 ActivateMenuGlitch113_Descriptor::ActivateMenuGlitch113_Descriptor()
@@ -28,7 +30,7 @@ ActivateMenuGlitch113_Descriptor::ActivateMenuGlitch113_Descriptor()
         "<font color=\"red\">(This works on game versions 1.1.1 - 1.1.3. It has been patched out in later versions.)</font>",
         FeedbackType::OPTIONAL_,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -46,8 +48,8 @@ ActivateMenuGlitch113::ActivateMenuGlitch113()
 
 
 
-void ActivateMenuGlitch113::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
-    ConsoleHandle& console = env.console;
+void ActivateMenuGlitch113::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
+    VideoStream& stream = env.console;
 
     //  Enable Strength
     pbf_mash_button(context, BUTTON_ZL, 2 * TICKS_PER_SECOND);
@@ -60,16 +62,17 @@ void ActivateMenuGlitch113::program(SingleSwitchProgramEnvironment& env, BotBase
     context.wait_for_all_requests();
     MapWatcher detector;
     int ret = wait_until(
-        console, context, std::chrono::seconds(2),
+        stream, context, std::chrono::seconds(2),
         {{detector}}
     );
     if (ret < 0){
         OperationFailedException::fire(
-            console, ErrorReport::SEND_ERROR_REPORT,
-            "Map not detected after 2 seconds."
+            ErrorReport::SEND_ERROR_REPORT,
+            "Map not detected after 2 seconds.",
+            stream
         );
     }else{
-        console.log("Detected map!", COLOR_BLUE);
+        stream.log("Detected map!", COLOR_BLUE);
     }
 
     context.wait_for(std::chrono::seconds(1));
@@ -79,7 +82,7 @@ void ActivateMenuGlitch113::program(SingleSwitchProgramEnvironment& env, BotBase
 
     //  Bring up menu
     pbf_press_button(context, BUTTON_ZL, 20, FLY_A_TO_X_DELAY - 20);
-    pbf_press_button(context, BUTTON_X, 20, GameSettings::instance().OVERWORLD_TO_MENU_DELAY);
+    pbf_press_button(context, BUTTON_X, 160ms, GameSettings::instance().OVERWORLD_TO_MENU_DELAY0);
 
     //  Fly
     pbf_press_button(context, BUTTON_ZL, 20, 10 * TICKS_PER_SECOND);

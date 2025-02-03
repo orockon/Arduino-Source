@@ -28,7 +28,7 @@ ShinyHuntOverworld_Descriptor::ShinyHuntOverworld_Descriptor()
         "Shiny hunt overworld " + STRING_POKEMON + ".",
         FeedbackType::REQUIRED,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 struct ShinyHuntOverworld_Descriptor::Stats : public PokemonSwSh::ShinyHuntTracker{
@@ -96,7 +96,7 @@ ShinyHuntOverworld::ShinyHuntOverworld()
 
 
 
-void ShinyHuntOverworld::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void ShinyHuntOverworld::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     OverlayLogTextScope overlay_log_text_scope(env.console.overlay());
     ShinyHuntOverworld_Descriptor::Stats& stats = env.current_stats<ShinyHuntOverworld_Descriptor::Stats>();
     env.update_stats();
@@ -154,8 +154,11 @@ void ShinyHuntOverworld::program(SingleSwitchProgramEnvironment& env, BotBaseCon
             e.send_notification(env, NOTIFICATION_ERROR_RECOVERABLE);
 
             stats.add_error();
-            pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY);
-            if (!reset_game_from_home(env, env.console, context, ConsoleSettings::instance().TOLERATE_SYSTEM_UPDATE_MENU_FAST)){
+            pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY0);
+            if (!reset_game_from_home(
+                env, env.console, context,
+                ConsoleSettings::instance().TOLERATE_SYSTEM_UPDATE_MENU_FAST
+            )){
                 stats.add_error();
                 continue;
             }

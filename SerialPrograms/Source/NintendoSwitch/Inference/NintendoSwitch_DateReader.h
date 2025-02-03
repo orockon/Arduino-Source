@@ -9,15 +9,13 @@
 
 #include "Common/Cpp/DateTime.h"
 #include "CommonFramework/ImageTools/ImageBoxes.h"
-#include "CommonFramework/InferenceInfra/VisualInferenceCallback.h"
-#include "CommonFramework/Inference/VisualDetector.h"
+#include "CommonTools/InferenceCallbacks/VisualInferenceCallback.h"
+#include "CommonTools/VisualDetector.h"
 #include "NintendoSwitch/NintendoSwitch_SingleSwitchProgram.h"
 
 namespace PokemonAutomation{
     struct ProgramInfo;
     class Logger;
-    class ConsoleHandle;
-    class BotBaseContext;
 namespace NintendoSwitch{
 
 
@@ -42,14 +40,14 @@ public:
 //    int8_t read_hours(Logger& logger, std::shared_ptr<const ImageRGB32> screen) const;
 
     void set_hours(
-        const ProgramInfo& info, ConsoleHandle& console, BotBaseContext& context,
+        const ProgramInfo& info, VideoStream& stream, SwitchControllerContext& context,
         uint8_t hour    //  0 - 23
     ) const;
 
 
     std::pair<DateFormat, DateTime> read_date(Logger& logger, std::shared_ptr<const ImageRGB32> screen) const;
     void set_date(
-        const ProgramInfo& info, ConsoleHandle& console, BotBaseContext& context,
+        const ProgramInfo& info, VideoStream& stream, SwitchControllerContext& context,
         const DateTime& date    //  Seconds is ignored.
     ) const;
 
@@ -66,11 +64,11 @@ private:
     DateTime read_date_eu(Logger& logger, std::shared_ptr<const ImageRGB32> screen, bool white_theme) const;
     DateTime read_date_jp(Logger& logger, std::shared_ptr<const ImageRGB32> screen, bool white_theme) const;
 
-    static void move_cursor(BotBaseContext& context, int current, int desired);
-    static void adjust_year(BotBaseContext& context, int current, int desired);
-    static void adjust_month(BotBaseContext& context, int current, int desired);
-    static void adjust_hour_24(BotBaseContext& context, int current, int desired);
-    static void adjust_minute(BotBaseContext& context, int current, int desired);
+    static void move_cursor(SwitchControllerContext& context, int current, int desired);
+    static void adjust_year(SwitchControllerContext& context, int current, int desired);
+    static void adjust_month(SwitchControllerContext& context, int current, int desired);
+    static void adjust_hour_24(SwitchControllerContext& context, int current, int desired);
+    static void adjust_minute(SwitchControllerContext& context, int current, int desired);
 
 private:
     ImageFloatBox m_background_top;
@@ -107,7 +105,7 @@ public:
 // then go back to the home screen
 void change_date(
     SingleSwitchProgramEnvironment& env, 
-    BotBaseContext& context,
+    SwitchControllerContext& context,
     const DateTime& date
 );
 

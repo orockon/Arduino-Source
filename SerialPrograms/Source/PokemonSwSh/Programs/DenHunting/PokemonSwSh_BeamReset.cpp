@@ -25,7 +25,7 @@ BeamReset_Descriptor::BeamReset_Descriptor()
         "Reset a beam until you see a purple beam.",
         FeedbackType::NONE,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -49,7 +49,7 @@ BeamReset::BeamReset()
     PA_ADD_OPTION(EXTRA_LINE);
 }
 
-void BeamReset::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void BeamReset::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     if (START_LOCATION.start_in_grip_menu()){
         grip_menu_connect_go_home(context);
         resume_game_front_of_den_nowatts(context, ConsoleSettings::instance().TOLERATE_SYSTEM_UPDATE_MENU_SLOW);
@@ -67,7 +67,7 @@ void BeamReset::program(SingleSwitchProgramEnvironment& env, BotBaseContext& con
 
         //  Drop wishing piece.
         pbf_press_button(context, BUTTON_A, 10, 70);
-        pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_FAST);
+        pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_FAST0);
 
         for (uint16_t c = 0; c < 4; c++){
             pbf_press_button(context, BUTTON_HOME, 10, 10);

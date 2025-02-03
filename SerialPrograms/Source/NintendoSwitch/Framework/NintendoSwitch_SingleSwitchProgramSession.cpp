@@ -12,9 +12,10 @@
 #include "CommonFramework/Options/Environment/PerformanceOptions.h"
 #include "CommonFramework/Notifications/ProgramInfo.h"
 #include "CommonFramework/Notifications/ProgramNotifications.h"
-#include "CommonFramework/Tools/BlackBorderCheck.h"
+#include "NintendoSwitch/Controllers/NintendoSwitch_Controller.h"
 #include "NintendoSwitch_SingleSwitchProgramOption.h"
 #include "NintendoSwitch_SingleSwitchProgramSession.h"
+#include "Pokemon/Pokemon_Strings.h"
 
 namespace PokemonAutomation{
 namespace NintendoSwitch{
@@ -58,16 +59,18 @@ void SingleSwitchProgramSession::run_program_instance(SingleSwitchProgramEnviron
         }
     }
 
-    if (!m_system.serial_session().is_ready()){
-        throw UserSetupError(m_system.logger(), "Cannot Start: Serial connection not ready.");
+    //  Startup Checks
+    m_option.instance().start_program_controller_check(scope, m_system.controller_session());
+    m_option.instance().start_program_feedback_check(scope, env.console, m_option.descriptor().feedback());
+    if (m_option.descriptor().category() != Pokemon::STRING_POKEMON + " RSE"
+        && m_option.descriptor().category() != Pokemon::STRING_POKEMON + " FRLG"){
+        m_option.instance().start_program_border_check(scope, env.console);
     }
-
-    start_program_video_check(env.console, m_option.descriptor().feedback());
 
     m_scope.store(&scope, std::memory_order_release);
 
     try{
-        BotBaseContext context(scope, env.console.botbase());
+        SwitchControllerContext context(scope, env.console.controller());
         m_option.instance().program(env, context);
         context.wait_for_all_requests();
     }catch (...){
@@ -78,7 +81,7 @@ void SingleSwitchProgramSession::run_program_instance(SingleSwitchProgramEnviron
 }
 void SingleSwitchProgramSession::internal_stop_program(){
     WriteSpinLock lg(m_lock);
-    m_system.serial_session().stop();
+//    m_system.serial_session().stop();
     CancellableScope* scope = m_scope.load(std::memory_order_acquire);
     if (scope != nullptr){
         scope->cancel(std::make_exception_ptr(ProgramCancelledException()));
@@ -89,11 +92,16 @@ void SingleSwitchProgramSession::internal_stop_program(){
         pause();
     }
 
-    m_system.serial_session().reset();
+//    m_system.serial_session().reset();
 }
 void SingleSwitchProgramSession::internal_run_program(){
     GlobalSettings::instance().PERFORMANCE->REALTIME_THREAD_PRIORITY.set_on_this_thread();
     m_option.options().reset_state();
+
+    if (!m_system.controller_session().ready()){
+        report_error("Cannot Start: The controller is not ready.");
+        return;
+    }
 
     SleepSuppressScope sleep_scope(GlobalSettings::instance().SLEEP_SUPPRESS->PROGRAM_RUNNING);
 
@@ -104,13 +112,15 @@ void SingleSwitchProgramSession::internal_run_program(){
         timestamp()
     );
     CancellableHolder<CancellableScope> scope;
+    ControllerConnection& connection = m_system.controller_session().connection();
+    SwitchController& switch_controller = dynamic_cast<SwitchController&>(connection);
     SingleSwitchProgramEnvironment env(
         program_info,
         scope,
         *this,
         current_stats_tracker(), historical_stats_tracker(),
         m_system.logger(),
-        m_system.sender().botbase(),
+        switch_controller,
         m_system.video(),
         m_system.overlay(),
         m_system.audio(),
@@ -120,7 +130,6 @@ void SingleSwitchProgramSession::internal_run_program(){
     try{
         logger().log("<b>Starting Program: " + identifier() + "</b>");
         run_program_instance(env, scope);
-//        m_setup->wait_for_all_requests();
         logger().log("Program finished normally!", COLOR_BLUE);
     }catch (OperationCancelledException&){
     }catch (ProgramCancelledException&){
@@ -130,7 +139,7 @@ void SingleSwitchProgramSession::internal_run_program(){
     }catch (InvalidConnectionStateException&){
     }catch (ScreenshotException& e){
         logger().log("Program stopped with an exception!", COLOR_RED);
-        e.add_console_if_needed(env.console);
+        e.add_stream_if_needed(env.console);
         std::string message = e.message();
         if (message.empty()){
             message = e.name();

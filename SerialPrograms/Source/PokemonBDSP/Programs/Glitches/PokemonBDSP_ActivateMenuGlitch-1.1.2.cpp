@@ -5,10 +5,9 @@
  */
 
 #include "CommonFramework/Exceptions/OperationFailedException.h"
-#include "CommonFramework/ImageTypes/ImageViewRGB32.h"
 #include "CommonFramework/VideoPipeline/VideoFeed.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
-#include "CommonFramework/Inference/BlackScreenDetector.h"
+#include "CommonTools/Async/InferenceRoutines.h"
+#include "CommonTools/VisualDetectors/BlackScreenDetector.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonBDSP/PokemonBDSP_Settings.h"
@@ -19,7 +18,8 @@
 namespace PokemonAutomation{
 namespace NintendoSwitch{
 namespace PokemonBDSP{
-    using namespace Pokemon;
+
+using namespace Pokemon;
 
 
 ActivateMenuGlitch112_Descriptor::ActivateMenuGlitch112_Descriptor()
@@ -31,7 +31,7 @@ ActivateMenuGlitch112_Descriptor::ActivateMenuGlitch112_Descriptor()
         "<font color=\"red\">(This requires game versions 1.1.0 - 1.1.2. The glitch it relies on was patched in v1.1.3.)</font>",
         FeedbackType::REQUIRED,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -49,12 +49,12 @@ ActivateMenuGlitch112::ActivateMenuGlitch112()
 
 
 
-void trigger_menu(ConsoleHandle& console, BotBaseContext& context){
+void trigger_menu(VideoStream& stream, SwitchControllerContext& context){
     context.wait_for_all_requests();
     MapWatcher detector;
-    int ret = run_until(
-        console, context,
-        [](BotBaseContext& context){
+    int ret = run_until<SwitchControllerContext>(
+        stream, context,
+        [](SwitchControllerContext& context){
             for (size_t i = 0; i < 12; i++){
                 for (size_t c = 0; c < 42; c++){
                     pbf_controller_state(context, BUTTON_ZL, DPAD_NONE, 128, 128, 128, 128, 1);
@@ -69,51 +69,53 @@ void trigger_menu(ConsoleHandle& console, BotBaseContext& context){
     );
     if (ret < 0){
         OperationFailedException::fire(
-            console, ErrorReport::SEND_ERROR_REPORT,
-            "Map not detected after 60 seconds."
+            ErrorReport::SEND_ERROR_REPORT,
+            "Map not detected after 60 seconds.",
+            stream
         );
     }
-    console.log("Detected map!", COLOR_BLUE);
+    stream.log("Detected map!", COLOR_BLUE);
 
     context.wait_for(std::chrono::milliseconds(500));
     ShortDialogDetector dialog;
-    while (dialog.detect(console.video().snapshot())){
-        console.log("Overshot mashing. Backing out.", COLOR_ORANGE);
+    while (dialog.detect(stream.video().snapshot())){
+        stream.log("Overshot mashing. Backing out.", COLOR_ORANGE);
         pbf_press_button(context, BUTTON_B, 20, 105);
         context.wait_for_all_requests();
     }
 }
-void trigger_map_overlap(ConsoleHandle& console, BotBaseContext& context){
+void trigger_map_overlap(VideoStream& stream, SwitchControllerContext& context){
     for (size_t c = 0; c < 10; c++){
-        trigger_menu(console, context);
+        trigger_menu(stream, context);
 
         pbf_press_dpad(context, DPAD_UP, 50, 0);
         context.wait_for_all_requests();
         BlackScreenWatcher detector;
         int ret = wait_until(
-            console, context, std::chrono::seconds(4),
+            stream, context, std::chrono::seconds(4),
             {{detector}}
         );
         if (ret >= 0){
-            console.log("Overlap detected! Entered " + STRING_POKEMON + " center.", COLOR_BLUE);
+            stream.log("Overlap detected! Entered " + STRING_POKEMON + " center.", COLOR_BLUE);
             return;
         }
-        console.log("Failed to activate map overlap.", COLOR_ORANGE);
+        stream.log("Failed to activate map overlap.", COLOR_ORANGE);
         pbf_mash_button(context, BUTTON_B, 3 * TICKS_PER_SECOND);
         pbf_press_button(context, BUTTON_R, 20, 230);
     }
     OperationFailedException::fire(
-        console, ErrorReport::SEND_ERROR_REPORT,
-        "Failed to trigger map overlap after 10 attempts."
+        ErrorReport::SEND_ERROR_REPORT,
+        "Failed to trigger map overlap after 10 attempts.",
+        stream
     );
 }
 
 
 
-void ActivateMenuGlitch112::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
-    ConsoleHandle& console = env.console;
+void ActivateMenuGlitch112::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
+    VideoStream& stream = env.console;
 
-    trigger_map_overlap(console, context);
+    trigger_map_overlap(stream, context);
     pbf_wait(context, 3 * TICKS_PER_SECOND);
 
     //  Move to escalator.
@@ -131,9 +133,9 @@ void ActivateMenuGlitch112::program(SingleSwitchProgramEnvironment& env, BotBase
     {
         context.wait_for_all_requests();
         BlackScreenWatcher detector;
-        int ret = run_until(
-            console, context,
-            [](BotBaseContext& context){
+        int ret = run_until<SwitchControllerContext>(
+            stream, context,
+            [](SwitchControllerContext& context){
                 for (size_t c = 0; c < 5; c++){
                     pbf_press_dpad(context, DPAD_LEFT, 20, 105);
                     pbf_press_dpad(context, DPAD_DOWN, 20, 105);
@@ -143,21 +145,22 @@ void ActivateMenuGlitch112::program(SingleSwitchProgramEnvironment& env, BotBase
         );
         if (ret < 0){
             OperationFailedException::fire(
-                console, ErrorReport::SEND_ERROR_REPORT,
-                "Unable to leave " + STRING_POKEMON + " center."
+                ErrorReport::SEND_ERROR_REPORT,
+                "Unable to leave " + STRING_POKEMON + " center.",
+                stream
             );
         }
-        console.log("Leaving " + STRING_POKEMON + " center detected!", COLOR_BLUE);
+        stream.log("Leaving " + STRING_POKEMON + " center detected!", COLOR_BLUE);
     }
     pbf_move_left_joystick(context, 128, 255, 125, 4 * TICKS_PER_SECOND);
 
     //  Center cursor.
-    pbf_press_button(context, BUTTON_X, 20, GameSettings::instance().OVERWORLD_TO_MENU_DELAY);
-    pbf_press_button(context, BUTTON_X, 20, GameSettings::instance().MENU_TO_OVERWORLD_DELAY);
+    pbf_press_button(context, BUTTON_X, 160ms, GameSettings::instance().OVERWORLD_TO_MENU_DELAY0);
+    pbf_press_button(context, BUTTON_X, 160ms, GameSettings::instance().MENU_TO_OVERWORLD_DELAY0);
 
     //  Bring up menu
     pbf_press_button(context, BUTTON_ZL, 20, FLY_A_TO_X_DELAY - 20);
-    pbf_press_button(context, BUTTON_X, 20, GameSettings::instance().OVERWORLD_TO_MENU_DELAY);
+    pbf_press_button(context, BUTTON_X, 160ms, GameSettings::instance().OVERWORLD_TO_MENU_DELAY0);
 
     //  Fly
     pbf_press_button(context, BUTTON_ZL, 20, 10 * TICKS_PER_SECOND);

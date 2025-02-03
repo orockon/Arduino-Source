@@ -7,11 +7,10 @@
 #ifndef PokemonAutomation_PokemonSwSh_MenuNavigation_H
 #define PokemonAutomation_PokemonSwSh_MenuNavigation_H
 
-#include <stddef.h>
+#include "CommonFramework/Tools/VideoStream.h"
+#include "NintendoSwitch/Controllers/NintendoSwitch_Controller.h"
 
 namespace PokemonAutomation{
-    class BotBaseContext;
-    class ConsoleHandle;
     class EventNotificationOption;
     class ProgramEnvironment;
 namespace NintendoSwitch{
@@ -24,11 +23,11 @@ namespace PokemonSwSh{
 // Will OperationFailedException::fire when failed to detect menu
 void navigate_to_menu_app(
     ProgramEnvironment& env,
-    ConsoleHandle& console,
-    BotBaseContext& context,
+    VideoStream& stream,
+    SwitchControllerContext& context,
     size_t app_index,
     EventNotificationOption& notification_option
-    );
+);
 
 
 }

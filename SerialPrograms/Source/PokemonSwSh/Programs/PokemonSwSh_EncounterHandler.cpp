@@ -7,8 +7,8 @@
 #include "CommonFramework/Exceptions/OperationFailedException.h"
 #include "CommonFramework/Exceptions/FatalProgramException.h"
 #include "CommonFramework/Tools/ProgramEnvironment.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
-#include "CommonFramework/Inference/BlackScreenDetector.h"
+#include "CommonTools/Async/InferenceRoutines.h"
+#include "CommonTools/VisualDetectors/BlackScreenDetector.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "Pokemon/Pokemon_Notification.h"
 #include "PokemonSwSh/PokemonSwSh_Settings.h"
@@ -24,19 +24,19 @@ namespace NintendoSwitch{
 namespace PokemonSwSh{
 
 
-void take_video(BotBaseContext& context){
+void take_video(SwitchControllerContext& context){
     pbf_wait(context, 5 * TICKS_PER_SECOND);
     pbf_press_button(context, BUTTON_CAPTURE, 2 * TICKS_PER_SECOND, 5 * TICKS_PER_SECOND);
 //    context->wait_for_all_requests();
 }
 void run_away(
-    ConsoleHandle& console, BotBaseContext& context,
+    VideoStream& stream, SwitchControllerContext& context,
     uint16_t exit_battle_time
 ){
     BlackScreenOverWatcher black_screen_detector;
-    run_until(
-        console, context,
-        [exit_battle_time](BotBaseContext& context){
+    run_until<SwitchControllerContext>(
+        stream, context,
+        [exit_battle_time](SwitchControllerContext& context){
             pbf_press_dpad(context, DPAD_UP, 10, 0);
             pbf_mash_button(context, BUTTON_A, TICKS_PER_SECOND);
             if (exit_battle_time > TICKS_PER_SECOND){
@@ -51,14 +51,15 @@ void run_away(
 
 
 StandardEncounterHandler::StandardEncounterHandler(
-    ProgramEnvironment& env, ConsoleHandle& console, BotBaseContext& context,
+    ProgramEnvironment& env,
+    VideoStream& stream, SwitchControllerContext& context,
     Language language,
     EncounterBotCommonOptions& settings,
     ShinyHuntTracker& session_stats
 )
     : m_env(env)
     , m_context(context)
-    , m_console(console)
+    , m_stream(stream)
     , m_language(language)
     , m_settings(settings)
     , m_session_stats(session_stats)
@@ -78,6 +79,9 @@ void StandardEncounterHandler::run_away_and_update_stats(
     uint16_t exit_battle_time,
     const ShinyDetectionResult& result
 ){
+    //  Read the name.
+    const std::set<std::string>* candidates_ptr = encounter.candidates();
+
     //  Initiate the run-away.
     pbf_press_dpad(m_context, DPAD_UP, 10, 0);
     pbf_mash_button(m_context, BUTTON_A, 60);
@@ -85,7 +89,6 @@ void StandardEncounterHandler::run_away_and_update_stats(
 
     update_frequencies(encounter);
 
-    const std::set<std::string>* candidates_ptr = encounter.candidates();
     const std::set<std::string>& candidates = candidates_ptr
         ? *candidates_ptr
         : std::set<std::string>();
@@ -100,9 +103,9 @@ void StandardEncounterHandler::run_away_and_update_stats(
     );
 
     BlackScreenOverWatcher black_screen_detector;
-    int ret = run_until(
-        m_console, m_context,
-        [exit_battle_time](BotBaseContext& context){
+    int ret = run_until<SwitchControllerContext>(
+        m_stream, m_context,
+        [exit_battle_time](SwitchControllerContext& context){
             pbf_mash_button(context, BUTTON_A, TICKS_PER_SECOND);
             if (exit_battle_time > TICKS_PER_SECOND){
                 pbf_mash_button(context, BUTTON_B, exit_battle_time - TICKS_PER_SECOND);
@@ -111,20 +114,21 @@ void StandardEncounterHandler::run_away_and_update_stats(
         {{black_screen_detector}}
     );
     if (ret < 0){
-        m_console.log("Timed out waiting for end of battle. Are you stuck in the battle?", COLOR_RED);
+        m_stream.log("Timed out waiting for end of battle. Are you stuck in the battle?", COLOR_RED);
     }
 }
 
 
 bool StandardEncounterHandler::handle_standard_encounter(const ShinyDetectionResult& result){
     if (result.shiny_type == ShinyType::UNKNOWN){
-        m_console.log("Unable to determine result of battle.", COLOR_RED);
+        m_stream.log("Unable to determine result of battle.", COLOR_RED);
         m_session_stats.add_error();
         m_consecutive_failures++;
         if (m_consecutive_failures >= 3){
             OperationFailedException::fire(
-                m_console, ErrorReport::SEND_ERROR_REPORT,
-                "3 consecutive failed encounter detections."
+                ErrorReport::SEND_ERROR_REPORT,
+                "3 consecutive failed encounter detections.",
+                m_stream
             );
         }
         return false;
@@ -140,7 +144,7 @@ bool StandardEncounterHandler::handle_standard_encounter(const ShinyDetectionRes
     }
 
     StandardEncounterDetection encounter(
-        m_env, m_console, m_context,
+        m_env, m_stream, m_context,
         m_language,
         m_settings.FILTER,
         result.shiny_type
@@ -173,13 +177,14 @@ bool StandardEncounterHandler::handle_standard_encounter_end_battle(
     uint16_t exit_battle_time
 ){
     if (result.shiny_type == ShinyType::UNKNOWN){
-        m_console.log("Unable to determine result of battle.", COLOR_RED);
+        m_stream.log("Unable to determine result of battle.", COLOR_RED);
         m_session_stats.add_error();
         m_consecutive_failures++;
         if (m_consecutive_failures >= 3){
             OperationFailedException::fire(
-                m_console, ErrorReport::SEND_ERROR_REPORT,
-                "3 consecutive failed encounter detections."
+                ErrorReport::SEND_ERROR_REPORT,
+                "3 consecutive failed encounter detections.",
+                m_stream
             );
         }
         return false;
@@ -190,7 +195,7 @@ bool StandardEncounterHandler::handle_standard_encounter_end_battle(
     m_env.update_stats();
 
     StandardEncounterDetection encounter(
-        m_env, m_console, m_context,
+        m_env, m_stream, m_context,
         m_language,
         m_settings.FILTER,
         result.shiny_type
@@ -231,7 +236,12 @@ bool StandardEncounterHandler::handle_standard_encounter_end_battle(
     case EncounterAction::RunAway:
         return false;
     case EncounterAction::ThrowBalls:{
-        CatchResults results = basic_catcher(m_console, m_context, m_language, action.pokeball_slug, action.ball_limit);
+        CatchResults results = basic_catcher(
+            m_stream, m_context,
+            m_language,
+            action.pokeball_slug,
+            action.ball_limit
+        );
         send_catch_notification(
             m_env,
             m_settings.NOTIFICATION_CATCH_SUCCESS,
@@ -247,15 +257,20 @@ bool StandardEncounterHandler::handle_standard_encounter_end_battle(
             break;
         default:
             throw_and_log<FatalProgramException>(
-                m_console, ErrorReport::NO_ERROR_REPORT,
+                m_stream.logger(), ErrorReport::NO_ERROR_REPORT,
                 "Unable to recover from failed catch.",
-                m_console
+                m_stream
             );
         }
         return false;
     }
     case EncounterAction::ThrowBallsAndSave:{
-        CatchResults results = basic_catcher(m_console, m_context, m_language, action.pokeball_slug, action.ball_limit);
+        CatchResults results = basic_catcher(
+            m_stream, m_context,
+            m_language,
+            action.pokeball_slug,
+            action.ball_limit
+        );
         send_catch_notification(
             m_env,
             m_settings.NOTIFICATION_CATCH_SUCCESS,
@@ -268,7 +283,7 @@ bool StandardEncounterHandler::handle_standard_encounter_end_battle(
         switch (results.result){
         case CatchResult::POKEMON_CAUGHT:
             pbf_mash_button(m_context, BUTTON_B, 2 * TICKS_PER_SECOND);
-            pbf_press_button(m_context, BUTTON_X, 20, GameSettings::instance().OVERWORLD_TO_MENU_DELAY); //  Save game.
+            pbf_press_button(m_context, BUTTON_X, 160ms, GameSettings::instance().OVERWORLD_TO_MENU_DELAY0); //  Save game.
             pbf_press_button(m_context, BUTTON_R, 20, 150);
             pbf_press_button(m_context, BUTTON_A, 10, 500);
             break;
@@ -277,9 +292,9 @@ bool StandardEncounterHandler::handle_standard_encounter_end_battle(
             break;
         default:
             throw_and_log<FatalProgramException>(
-                m_console, ErrorReport::NO_ERROR_REPORT,
+                m_stream.logger(), ErrorReport::NO_ERROR_REPORT,
                 "Unable to recover from failed catch.",
-                m_console
+                m_stream
             );
         }
         return false;

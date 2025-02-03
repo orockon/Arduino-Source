@@ -7,13 +7,6 @@
 #ifndef PokemonAutomation_PokemonSV_AutoStory_Segment_16_H
 #define PokemonAutomation_PokemonSV_AutoStory_Segment_16_H
 
-#include <functional>
-#include "Common/Cpp/Options/EnumDropdownOption.h"
-#include "CommonFramework/Notifications/EventNotificationsTable.h"
-#include "CommonFramework/Options/LanguageOCROption.h"
-#include "NintendoSwitch/Options/NintendoSwitch_GoHomeWhenDoneOption.h"
-#include "Common/NintendoSwitch/NintendoSwitch_ControllerDefs.h"
-#include "PokemonSV/Programs/PokemonSV_Navigation.h"
 #include "PokemonSV_AutoStoryTools.h"
 
 namespace PokemonAutomation{
@@ -27,18 +20,27 @@ public:
     virtual std::string end_text() const override;
     virtual void run_segment(
         SingleSwitchProgramEnvironment& env, 
-        BotBaseContext& context,
-        AutoStoryOptions options) const override;
+        SwitchControllerContext& context,
+        AutoStoryOptions options
+    ) const override;
 };
 
 
 // start: At Cascarrafa (West) Pokecenter.
 // end: At Cascarrafa Gym. Received Kofu's wallet.
-void checkpoint_35(SingleSwitchProgramEnvironment& env, BotBaseContext& context, EventNotificationOption& notif_status_update);   
+void checkpoint_35(
+    SingleSwitchProgramEnvironment& env,
+    SwitchControllerContext& context,
+    EventNotificationOption& notif_status_update
+);
 
 // start: At Cascarrafa Gym. Received Kofu's wallet.
 // end: At Porto Marinada Pokecenter.
-void checkpoint_36(SingleSwitchProgramEnvironment& env, BotBaseContext& context, EventNotificationOption& notif_status_update);             
+void checkpoint_36(
+    SingleSwitchProgramEnvironment& env,
+    SwitchControllerContext& context,
+    EventNotificationOption& notif_status_update
+);
 
 
 

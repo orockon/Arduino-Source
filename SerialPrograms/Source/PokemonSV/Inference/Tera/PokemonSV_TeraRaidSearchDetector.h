@@ -10,12 +10,12 @@
 #include "Common/Cpp/Color.h"
 #include "CommonFramework/ImageTypes/ImageViewRGB32.h"
 #include "CommonFramework/ImageTools/ImageBoxes.h"
-#include "CommonFramework/InferenceInfra/VisualInferenceCallback.h"
-#include "CommonFramework/Inference/VisualDetector.h"
+#include "CommonFramework/Tools/VideoStream.h"
+#include "CommonTools/InferenceCallbacks/VisualInferenceCallback.h"
+#include "CommonTools/VisualDetector.h"
+#include "NintendoSwitch/Controllers/NintendoSwitch_Controller.h"
 
 namespace PokemonAutomation{
-    class ConsoleHandle;
-    class BotBaseContext;
     struct ProgramInfo;
 namespace NintendoSwitch{
 namespace PokemonSV{
@@ -30,7 +30,10 @@ public:
     virtual bool detect(const ImageViewRGB32& screen) const override;
 
     bool detect_search_location(ImageFloatBox& box, const ImageViewRGB32& screen) const;
-    bool move_cursor_to_search(const ProgramInfo& info, ConsoleHandle& console, BotBaseContext& context) const;
+    bool move_cursor_to_search(
+        const ProgramInfo& info,
+        VideoStream& stream, SwitchControllerContext& context
+    ) const;
 
 private:
     Color m_color;

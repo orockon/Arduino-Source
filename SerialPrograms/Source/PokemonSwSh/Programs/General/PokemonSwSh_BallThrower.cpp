@@ -24,7 +24,7 @@ BallThrower_Descriptor::BallThrower_Descriptor()
         "Blindly throw balls at the opposing " + STRING_POKEMON + " until it catches.",
         FeedbackType::NONE,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 
@@ -34,10 +34,10 @@ BallThrower::BallThrower(){
     PA_ADD_OPTION(START_LOCATION);
 }
 
-void BallThrower::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void BallThrower::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     if (START_LOCATION.start_in_grip_menu()){
         grip_menu_connect_go_home(context);
-        pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().HOME_TO_GAME_DELAY);
+        pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().HOME_TO_GAME_DELAY0);
     }else{
         pbf_press_button(context, BUTTON_X, 5, 5);
     }
@@ -48,7 +48,7 @@ void BallThrower::program(SingleSwitchProgramEnvironment& env, BotBaseContext& c
         pbf_mash_button(context, BUTTON_B, 100);
     }
 
-    pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE);
+    pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_SAFE0);
 }
 
 

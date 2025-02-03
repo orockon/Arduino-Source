@@ -5,7 +5,7 @@
  */
 
 #include "Common/Cpp/PrettyPrint.h"
-#include "NintendoSwitch/Commands/NintendoSwitch_Commands_Device.h"
+#include "CommonFramework/Notifications/ProgramNotifications.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonSwSh/PokemonSwSh_Settings.h"
@@ -28,9 +28,8 @@ PokeJobsFarmer_Descriptor::PokeJobsFarmer_Descriptor()
           "Farm " + STRING_POKEJOB + "s.",
           FeedbackType::NONE,
           AllowCommandsWhenRunning::DISABLE_COMMANDS,
-          PABotBaseLevel::PABOTBASE_12KB)
-{
-}
+          {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS})
+{}
 
 PokeJobsFarmer::PokeJobsFarmer()
     : SKIPS(
@@ -57,15 +56,19 @@ PokeJobsFarmer::PokeJobsFarmer()
         TICKS_PER_SECOND,
         "8 * TICKS_PER_SECOND"
     )
+    , NOTIFICATIONS({
+        &NOTIFICATION_PROGRAM_FINISH,
+    })
 {
     PA_ADD_OPTION(SKIPS);
     PA_ADD_OPTION(CONCURRENCY);
     PA_ADD_OPTION(MENU_INDEX);
     PA_ADD_STATIC(m_advanced_options);
     PA_ADD_OPTION(MASH_B_DURATION);
+    PA_ADD_OPTION(NOTIFICATIONS);
 }
 
-static void enter_jobs(BotBaseContext& context, uint16_t index){
+static void enter_jobs(SwitchControllerContext& context, uint16_t index){
     // Enter menu
     pbf_press_button(context, BUTTON_A, 10, 90);
     pbf_press_button(context, BUTTON_B, 10, 90);
@@ -77,7 +80,7 @@ static void enter_jobs(BotBaseContext& context, uint16_t index){
     pbf_press_button(context, BUTTON_A, 10, 5 * TICKS_PER_SECOND); // Wait for animation to complete
 }
 
-void PokeJobsFarmer::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void PokeJobsFarmer::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     uint8_t year = MAX_YEAR;
 
     // Play it safe in case some menu is open
@@ -90,7 +93,7 @@ void PokeJobsFarmer::program(SingleSwitchProgramEnvironment& env, BotBaseContext
             // Roll back to 2001
             env.log("Rolling back!");
             pbf_press_button(context, BUTTON_B, 5, 5);
-            pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_FAST);
+            pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_FAST0);
             home_roll_date_enter_game_autorollback(env.console, context, year);
             pbf_mash_button(context, BUTTON_B, MASH_B_DURATION);
 
@@ -131,7 +134,7 @@ void PokeJobsFarmer::program(SingleSwitchProgramEnvironment& env, BotBaseContext
 
         // Go to home menu
         env.log("#### Go to Switch home menu");
-        pbf_press_button(context, BUTTON_HOME, 10, GameSettings::instance().GAME_TO_HOME_DELAY_FAST);
+        pbf_press_button(context, BUTTON_HOME, 80ms, GameSettings::instance().GAME_TO_HOME_DELAY_FAST0);
 
         // Skip frame
         env.log("#### Skip frame");
@@ -161,6 +164,8 @@ void PokeJobsFarmer::program(SingleSwitchProgramEnvironment& env, BotBaseContext
             pbf_mash_button(context, BUTTON_B, MASH_B_DURATION);
         }
     }
+
+    send_program_finished_notification(env, NOTIFICATION_PROGRAM_FINISH);
 }
 
 

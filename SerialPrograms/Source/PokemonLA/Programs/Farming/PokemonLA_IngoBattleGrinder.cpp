@@ -5,14 +5,11 @@
  */
 
 #include <chrono>
-#include <iostream>
 #include "CommonFramework/Exceptions/OperationFailedException.h"
-#include "CommonFramework/ImageTypes/ImageViewRGB32.h"
 #include "CommonFramework/Notifications/ProgramNotifications.h"
 #include "CommonFramework/Tools/ErrorDumper.h"
-#include "CommonFramework/Tools/StatsTracking.h"
-#include "CommonFramework/InferenceInfra/InferenceRoutines.h"
-#include "CommonFramework/VideoPipeline/VideoFeed.h"
+#include "CommonFramework/ProgramStats/StatsTracking.h"
+#include "CommonTools/Async/InferenceRoutines.h"
 #include "NintendoSwitch/Commands/NintendoSwitch_Commands_PushButtons.h"
 #include "Pokemon/Pokemon_Strings.h"
 #include "PokemonLA/Inference/Battles/PokemonLA_BattleMenuDetector.h"
@@ -43,7 +40,7 @@ IngoBattleGrinder_Descriptor::IngoBattleGrinder_Descriptor()
         "Attend Ingo's battles to grind exp and move related " + STRING_POKEDEX + " research tasks. Less effective than Ingo Move Grinder for " + STRING_POKEDEX + " research tasks but more effective for everything else.",
         FeedbackType::REQUIRED,
         AllowCommandsWhenRunning::DISABLE_COMMANDS,
-        PABotBaseLevel::PABOTBASE_12KB
+        {SerialPABotBase::OLD_NINTENDO_SWITCH_DEFAULT_REQUIREMENTS}
     )
 {}
 class IngoBattleGrinder_Descriptor::Stats : public StatsTracker{
@@ -89,18 +86,36 @@ IngoBattleGrinder::IngoBattleGrinder()
 
 
 
-bool IngoBattleGrinder::start_dialog(ConsoleHandle& console, BotBaseContext& context){
+bool IngoBattleGrinder::start_dialog(VideoStream& stream, SwitchControllerContext& context){
     // First press A to start talking with Ingo.
     pbf_press_button(context, BUTTON_A, 20, 150);
     context.wait_for_all_requests();
 
     {
-        ButtonDetector button0(console, console, ButtonType::ButtonA, {0.50, 0.408, 0.40, 0.042}, std::chrono::milliseconds(100), true);
-        ButtonDetector button1(console, console, ButtonType::ButtonA, {0.50, 0.450, 0.40, 0.042}, std::chrono::milliseconds(100), true);
-        ButtonDetector button2(console, console, ButtonType::ButtonA, {0.50, 0.492, 0.40, 0.042}, std::chrono::milliseconds(100), true);
-        int ret = run_until(
-            console, context,
-            [&](BotBaseContext& context){
+        ButtonDetector button0(
+            stream.logger(), stream.overlay(),
+            ButtonType::ButtonA,
+            {0.50, 0.408, 0.40, 0.042},
+            std::chrono::milliseconds(100),
+            true
+        );
+        ButtonDetector button1(
+            stream.logger(), stream.overlay(),
+            ButtonType::ButtonA,
+            {0.50, 0.450, 0.40, 0.042},
+            std::chrono::milliseconds(100),
+            true
+        );
+        ButtonDetector button2(
+            stream.logger(), stream.overlay(),
+            ButtonType::ButtonA,
+            {0.50, 0.492, 0.40, 0.042},
+            std::chrono::milliseconds(100),
+            true
+        );
+        int ret = run_until<SwitchControllerContext>(
+            stream, context,
+            [&](SwitchControllerContext& context){
                 for (size_t c = 0; c < 10; c++){
                     pbf_press_button(context, BUTTON_A, 20, 150);
                 }
@@ -123,8 +138,9 @@ bool IngoBattleGrinder::start_dialog(ConsoleHandle& console, BotBaseContext& con
             break;
         default:
             OperationFailedException::fire(
-                console, ErrorReport::SEND_ERROR_REPORT,
-                "Unable to detect options after 10 A presses."
+                ErrorReport::SEND_ERROR_REPORT,
+                "Unable to detect options after 10 A presses.",
+                stream
             );
         }
     }
@@ -132,10 +148,16 @@ bool IngoBattleGrinder::start_dialog(ConsoleHandle& console, BotBaseContext& con
     pbf_press_button(context, BUTTON_A, 20, 150);
     context.wait_for_all_requests();
 
-    ButtonDetector button2(console, console, ButtonType::ButtonA, {0.50, 0.350, 0.40, 0.400}, std::chrono::milliseconds(100), true);
-    int ret = run_until(
-        console, context,
-        [&](BotBaseContext& context){
+    ButtonDetector button2(
+        stream.logger(), stream.overlay(),
+        ButtonType::ButtonA,
+        {0.50, 0.350, 0.40, 0.400},
+        std::chrono::milliseconds(100),
+        true
+    );
+    int ret = run_until<SwitchControllerContext>(
+        stream, context,
+        [&](SwitchControllerContext& context){
             for (size_t c = 0; c < 5; c++){
                 pbf_press_button(context, BUTTON_A, 20, 150);
             }
@@ -147,14 +169,15 @@ bool IngoBattleGrinder::start_dialog(ConsoleHandle& console, BotBaseContext& con
         return false;
     default:
         OperationFailedException::fire(
-            console, ErrorReport::SEND_ERROR_REPORT,
-            "Unable to find opponent list options after 5 A presses."
+            ErrorReport::SEND_ERROR_REPORT,
+            "Unable to find opponent list options after 5 A presses.",
+            stream
         );
     }
 }
 
 
-bool IngoBattleGrinder::run_iteration(SingleSwitchProgramEnvironment& env, BotBaseContext& context, std::map<size_t, size_t>& pokemon_move_attempts){
+bool IngoBattleGrinder::run_iteration(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context, std::map<size_t, size_t>& pokemon_move_attempts){
     IngoBattleGrinder_Descriptor::Stats& stats = env.current_stats<IngoBattleGrinder_Descriptor::Stats>();
 
     env.console.log("Starting battle...");
@@ -244,8 +267,9 @@ bool IngoBattleGrinder::run_iteration(SingleSwitchProgramEnvironment& env, BotBa
         if (ret < 0){
             env.console.log("Error: Failed to find battle menu after 2 minutes.");
             OperationFailedException::fire(
-                env.console, ErrorReport::SEND_ERROR_REPORT,
-                "Failed to find battle menu after 2 minutes."
+                ErrorReport::SEND_ERROR_REPORT,
+                "Failed to find battle menu after 2 minutes.",
+                env.console
             );
         }
 
@@ -289,8 +313,9 @@ bool IngoBattleGrinder::run_iteration(SingleSwitchProgramEnvironment& env, BotBa
                         // Struggle.
                         env.console.log("No PP on all moves. Abort program.", COLOR_RED);
                         OperationFailedException::fire(
-                            env.console, ErrorReport::SEND_ERROR_REPORT,
-                            "No PP on all moves."
+                            ErrorReport::SEND_ERROR_REPORT,
+                            "No PP on all moves.",
+                            env.console
                         );
                     }
                     
@@ -346,7 +371,7 @@ bool IngoBattleGrinder::run_iteration(SingleSwitchProgramEnvironment& env, BotBa
 
 
 
-void IngoBattleGrinder::program(SingleSwitchProgramEnvironment& env, BotBaseContext& context){
+void IngoBattleGrinder::program(SingleSwitchProgramEnvironment& env, SwitchControllerContext& context){
     IngoBattleGrinder_Descriptor::Stats& stats = env.current_stats<IngoBattleGrinder_Descriptor::Stats>();
 
     //  Connect the controller.
